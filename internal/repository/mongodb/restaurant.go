@@ -78,7 +78,7 @@ func (r *RestaurantRepository) List(ctx context.Context, filters map[string]inte
 	opts := options.Find()
 	opts.SetLimit(int64(limit))
 	opts.SetSkip(int64(offset))
-	opts.SetSort(bson.D{{"created_at", -1}})
+	opts.SetSort(bson.D{primitive.E{Key: "created_at", Value: -1}})
 
 	cursor, err := r.collection.Find(ctx, filter, opts)
 	if err != nil {

@@ -83,5 +83,6 @@ func main() {
 
 	log.Info("Server exited")
 }
+
 // Test comment for pre-commit hook
 // Updated comment
