@@ -1,0 +1,1098 @@
+basePath: /api/v1
+definitions:
+  auth.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+      user:
+        $ref: '#/definitions/auth.UserInfo'
+    type: object
+  auth.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.RegisterRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - full_name
+    - password
+    type: object
+  auth.UserInfo:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      has_email:
+        type: boolean
+      has_telegram:
+        type: boolean
+      id:
+        type: string
+    type: object
+  auth.VerifyEmailRequest:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+    required:
+    - code
+    - email
+    type: object
+  city.CityResponse:
+    properties:
+      average_salary:
+        type: number
+      country:
+        type: string
+      country_code:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      salary_coefficient:
+        type: number
+      utc_offset:
+        type: integer
+    type: object
+  handler.ErrorResponse:
+    properties:
+      code:
+        example: ERR_001
+        type: string
+      details:
+        example: Additional error details
+        type: string
+      message:
+        example: Error message
+        type: string
+    type: object
+  restaurant.CreateRestaurantRequest:
+    properties:
+      address:
+        maxLength: 200
+        minLength: 5
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      email:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      phone:
+        type: string
+      rooms:
+        items:
+          $ref: '#/definitions/restaurant.Room'
+        type: array
+      settings:
+        $ref: '#/definitions/restaurant.Settings'
+      url_name:
+        maxLength: 50
+        minLength: 2
+        type: string
+      utc_offset:
+        maximum: 14
+        minimum: -12
+        type: integer
+    required:
+    - address
+    - email
+    - name
+    - phone
+    - url_name
+    type: object
+  restaurant.DayHours:
+    properties:
+      close_time:
+        description: HH:MM format
+        type: string
+      is_open:
+        type: boolean
+      open_time:
+        description: HH:MM format
+        type: string
+    type: object
+  restaurant.RestaurantResponse:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      phone:
+        type: string
+      room_count:
+        type: integer
+      settings:
+        $ref: '#/definitions/restaurant.Settings'
+      updated_at:
+        type: string
+      url_name:
+        type: string
+      utc_offset:
+        type: integer
+    type: object
+  restaurant.Room:
+    properties:
+      closed_dates:
+        description: YYYY-MM-DD format
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      is_enabled:
+        type: boolean
+      name:
+        type: string
+      tables:
+        items:
+          $ref: '#/definitions/restaurant.Table'
+        type: array
+      work_hours:
+        $ref: '#/definitions/restaurant.WorkHours'
+    type: object
+  restaurant.Settings:
+    properties:
+      auto_reservation_accepting:
+        type: boolean
+      default_reservation_duration:
+        description: minutes
+        type: integer
+      max_guests_per_reservation:
+        type: integer
+    type: object
+  restaurant.Table:
+    properties:
+      capacity:
+        type: integer
+      id:
+        type: string
+      is_enabled:
+        type: boolean
+      name:
+        type: string
+    type: object
+  restaurant.WorkHours:
+    properties:
+      friday:
+        $ref: '#/definitions/restaurant.DayHours'
+      monday:
+        $ref: '#/definitions/restaurant.DayHours'
+      saturday:
+        $ref: '#/definitions/restaurant.DayHours'
+      sunday:
+        $ref: '#/definitions/restaurant.DayHours'
+      thursday:
+        $ref: '#/definitions/restaurant.DayHours'
+      tuesday:
+        $ref: '#/definitions/restaurant.DayHours'
+      wednesday:
+        $ref: '#/definitions/restaurant.DayHours'
+    type: object
+  user.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      restaurants:
+        items:
+          $ref: '#/definitions/user.UserRestaurant'
+        type: array
+      role:
+        type: string
+      tg_chat_id:
+        type: integer
+      tg_id:
+        type: integer
+      tg_is_bot:
+        type: boolean
+      tg_is_premium:
+        type: boolean
+      tg_lang:
+        type: string
+      tg_username:
+        type: string
+    required:
+    - full_name
+    type: object
+  user.Role:
+    enum:
+    - owner
+    - manager
+    - employee
+    - user
+    type: string
+    x-enum-varnames:
+    - RoleOwner
+    - RoleManager
+    - RoleEmployee
+    - RoleUser
+  user.UpdateUserRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      tg_chat_id:
+        type: integer
+      tg_id:
+        type: integer
+      tg_is_bot:
+        type: boolean
+      tg_is_premium:
+        type: boolean
+      tg_lang:
+        type: string
+      tg_username:
+        type: string
+    type: object
+  user.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      restaurants:
+        items:
+          $ref: '#/definitions/user.UserRestaurant'
+        type: array
+      tg_chat_id:
+        type: integer
+      tg_id:
+        type: integer
+      tg_is_bot:
+        type: boolean
+      tg_is_premium:
+        type: boolean
+      tg_lang:
+        type: string
+      tg_username:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  user.UserRestaurant:
+    properties:
+      restaurant_id:
+        type: string
+      role:
+        $ref: '#/definitions/user.Role'
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@reservia.com
+    name: Reservia API Support
+    url: http://www.reservia.com/support
+  description: A restaurant reservation management system API built with clean architecture.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Reservia API
+  version: "1.0"
+paths:
+  /api/v1/auth/by_reservation/{reservationID}:
+    get:
+      consumes:
+      - application/json
+      description: Quick access authorization using reservation ID
+      parameters:
+      - description: Reservation ID
+        in: path
+        name: reservationID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Authorize by reservation ID
+      tags:
+      - authentication
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Initiate login process with email verification
+      parameters:
+      - description: Login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: User login
+      tags:
+      - authentication
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Initiate registration process with email verification
+      parameters:
+      - description: Registration request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: User registration
+      tags:
+      - authentication
+  /api/v1/auth/telegram:
+    post:
+      consumes:
+      - application/json
+      description: Initiate Telegram authorization process
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Authorize via Telegram
+      tags:
+      - authentication
+  /api/v1/auth/telegram/{requestID}:
+    get:
+      consumes:
+      - application/json
+      description: Check status of Telegram authorization request
+      parameters:
+      - description: Request ID
+        in: path
+        name: requestID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Verify Telegram authorization
+      tags:
+      - authentication
+  /api/v1/auth/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verify email verification code
+      parameters:
+      - description: Verification request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Verify email code
+      tags:
+      - authentication
+  /api/v1/cities:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all available cities with their information
+      parameters:
+      - description: Filter by country code or name
+        in: query
+        name: country
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/city.CityResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Get all cities
+      tags:
+      - cities
+  /api/v1/cities/{name}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific city by its name
+      parameters:
+      - description: City name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/city.CityResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Get city by name
+      tags:
+      - cities
+  /api/v1/dev/ping:
+    get:
+      consumes:
+      - application/json
+      description: Simple ping endpoint for development and health checking
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Development ping endpoint
+      tags:
+      - development
+  /api/v1/restaurants/{restaurantID}/rooms:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all rooms for a specific restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/restaurant.Room'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Get all rooms for a restaurant
+      tags:
+      - rooms
+    post:
+      consumes:
+      - application/json
+      description: Create a new room in a restaurant (placeholder implementation)
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: string
+      - description: Room creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/restaurant.Room'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/restaurant.Room'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Create a new room
+      tags:
+      - rooms
+  /api/v1/restaurants/{restaurantID}/rooms/{roomID}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a specific room from a restaurant (placeholder implementation)
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Delete a room
+      tags:
+      - rooms
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific room by ID from a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/restaurant.Room'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Get a specific room
+      tags:
+      - rooms
+    patch:
+      consumes:
+      - application/json
+      description: Update a specific room in a restaurant (placeholder implementation)
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomID
+        required: true
+        type: string
+      - description: Room update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/restaurant.Room'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/restaurant.Room'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Update a room
+      tags:
+      - rooms
+  /health:
+    get:
+      description: Check if the API is running and healthy
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API is healthy
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - system
+  /metrics:
+    get:
+      description: Returns metrics in Prometheus format for scraping
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Prometheus metrics endpoint
+      tags:
+      - metrics
+  /restaurants:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of restaurants with filtering and pagination
+      parameters:
+      - description: 'Number of restaurants to return (default: 10)'
+        in: query
+        name: limit
+        type: integer
+      - description: 'Number of restaurants to skip (default: 0)'
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of restaurants with pagination info
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List restaurants
+      tags:
+      - restaurants
+    post:
+      consumes:
+      - application/json
+      description: Create a new restaurant with the provided information
+      parameters:
+      - description: Restaurant creation data
+        in: body
+        name: restaurant
+        required: true
+        schema:
+          $ref: '#/definitions/restaurant.CreateRestaurantRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Restaurant created successfully
+          schema:
+            $ref: '#/definitions/restaurant.RestaurantResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new restaurant
+      tags:
+      - restaurants
+  /restaurants/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a restaurant by its unique ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Restaurant found
+          schema:
+            $ref: '#/definitions/restaurant.RestaurantResponse'
+        "400":
+          description: Invalid restaurant ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Restaurant not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get restaurant by ID
+      tags:
+      - restaurants
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of users with pagination
+      parameters:
+      - description: 'Number of users to return (default: 10)'
+        in: query
+        name: limit
+        type: integer
+      - description: 'Number of users to skip (default: 0)'
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of users with pagination info
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with the provided information
+      parameters:
+      - description: User creation data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/user.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            $ref: '#/definitions/user.UserResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new user
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: User deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid user ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete user
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a user by their unique ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User found
+          schema:
+            $ref: '#/definitions/user.UserResponse'
+        "400":
+          description: Invalid user ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update user information by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User update data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/user.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User updated successfully
+          schema:
+            $ref: '#/definitions/user.UserResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update user
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
