@@ -17,7 +17,7 @@ func NewDevHandler() *DevHandler {
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  map[string]string
-// @Router       /api/v1/dev/ping [get]
+// @Router       /api/admin/dev/ping [get]
 func (h *DevHandler) Ping(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

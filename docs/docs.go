@@ -24,7 +24,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/auth/login": {
+        "/api/admin/auth/login": {
             "post": {
                 "description": "Initiate login process with email verification",
                 "consumes": [
@@ -76,7 +76,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/register": {
+        "/api/admin/auth/register": {
             "post": {
                 "description": "Initiate registration process with email verification",
                 "consumes": [
@@ -128,7 +128,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/register/employee": {
+        "/api/admin/auth/register/employee": {
             "get": {
                 "description": "Complete employee registration using invitation link with code_request_id and code",
                 "consumes": [
@@ -191,7 +191,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/tg": {
+        "/api/admin/auth/tg": {
             "get": {
                 "description": "Initiate Telegram authorization process for admin bot",
                 "consumes": [
@@ -220,7 +220,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/tg/{requestID}": {
+        "/api/admin/auth/tg/{requestID}": {
             "get": {
                 "description": "Check status of Telegram authorization request from admin bot",
                 "consumes": [
@@ -264,7 +264,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/verify": {
+        "/api/admin/auth/verify": {
             "post": {
                 "description": "Verify email verification code",
                 "consumes": [
@@ -316,7 +316,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/cities": {
+        "/api/admin/cities": {
             "get": {
                 "description": "Retrieve all available cities with their information",
                 "consumes": [
@@ -348,7 +348,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/cities/{name}": {
+        "/api/admin/cities/{name}": {
             "get": {
                 "description": "Retrieve a specific city by its name",
                 "consumes": [
@@ -392,7 +392,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/dev/ping": {
+        "/api/admin/dev/ping": {
             "get": {
                 "description": "Simple ping endpoint for development and health checking",
                 "consumes": [
@@ -4756,7 +4756,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
-	BasePath:         "/api/v1",
+	BasePath:         "/api/admin",
 	Schemes:          []string{},
 	Title:            "Reservia API",
 	Description:      "A restaurant reservation management system API built with clean architecture.",

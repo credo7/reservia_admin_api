@@ -1,4 +1,4 @@
-basePath: /api/v1
+basePath: /api/admin
 definitions:
   model.AdminUpdateEmployeeRequest:
     properties:
@@ -747,7 +747,7 @@ info:
   title: Reservia API
   version: "1.0"
 paths:
-  /api/v1/auth/login:
+  /api/admin/auth/login:
     post:
       consumes:
       - application/json
@@ -781,7 +781,7 @@ paths:
       summary: User login
       tags:
       - authentication
-  /api/v1/auth/register:
+  /api/admin/auth/register:
     post:
       consumes:
       - application/json
@@ -815,7 +815,7 @@ paths:
       summary: User registration
       tags:
       - authentication
-  /api/v1/auth/register/employee:
+  /api/admin/auth/register/employee:
     get:
       consumes:
       - application/json
@@ -858,7 +858,7 @@ paths:
       summary: Complete employee registration via invitation
       tags:
       - authentication
-  /api/v1/auth/tg:
+  /api/admin/auth/tg:
     get:
       consumes:
       - application/json
@@ -877,7 +877,7 @@ paths:
       summary: Authorize via Telegram (Admin Bot)
       tags:
       - authentication
-  /api/v1/auth/tg/{requestID}:
+  /api/admin/auth/tg/{requestID}:
     get:
       consumes:
       - application/json
@@ -906,7 +906,7 @@ paths:
       summary: Verify Telegram authorization
       tags:
       - authentication
-  /api/v1/auth/verify:
+  /api/admin/auth/verify:
     post:
       consumes:
       - application/json
@@ -940,7 +940,7 @@ paths:
       summary: Verify email code
       tags:
       - authentication
-  /api/v1/cities:
+  /api/admin/cities:
     get:
       consumes:
       - application/json
@@ -961,7 +961,7 @@ paths:
       summary: Get all cities
       tags:
       - cities
-  /api/v1/cities/{name}:
+  /api/admin/cities/{name}:
     get:
       consumes:
       - application/json
@@ -990,7 +990,7 @@ paths:
       summary: Get city by name
       tags:
       - cities
-  /api/v1/dev/ping:
+  /api/admin/dev/ping:
     get:
       consumes:
       - application/json
