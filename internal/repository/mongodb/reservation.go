@@ -3,6 +3,7 @@ package mongodb
 
 import (
 	"context"
+	"github.com/reservia/api/internal/model"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/reservia/api/internal/domain/reservation"
 	"github.com/reservia/api/internal/repository"
 )
 
@@ -27,7 +27,7 @@ func NewReservationRepository(db *mongo.Database) repository.ReservationReposito
 }
 
 // Create creates a new reservation.
-func (r *ReservationRepository) Create(ctx context.Context, res *reservation.Reservation) error {
+func (r *ReservationRepository) Create(ctx context.Context, res *model.Reservation) error {
 	res.ID = primitive.NewObjectID()
 	res.CreatedAt = time.Now()
 	res.UpdatedAt = time.Now()
@@ -37,8 +37,8 @@ func (r *ReservationRepository) Create(ctx context.Context, res *reservation.Res
 }
 
 // GetByID retrieves a reservation by ID.
-func (r *ReservationRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*reservation.Reservation, error) {
-	var res reservation.Reservation
+func (r *ReservationRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*model.Reservation, error) {
+	var res model.Reservation
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&res)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -50,7 +50,7 @@ func (r *ReservationRepository) GetByID(ctx context.Context, id primitive.Object
 }
 
 // Update updates a reservation.
-func (r *ReservationRepository) Update(ctx context.Context, res *reservation.Reservation) error {
+func (r *ReservationRepository) Update(ctx context.Context, res *model.Reservation) error {
 	res.UpdatedAt = time.Now()
 
 	_, err := r.collection.UpdateOne(
@@ -68,7 +68,7 @@ func (r *ReservationRepository) Delete(ctx context.Context, id primitive.ObjectI
 }
 
 // GetByUserID retrieves reservations by user ID.
-func (r *ReservationRepository) GetByUserID(ctx context.Context, userID primitive.ObjectID, limit, offset int) ([]*reservation.Reservation, error) {
+func (r *ReservationRepository) GetByUserID(ctx context.Context, userID primitive.ObjectID, limit, offset int) ([]*model.Reservation, error) {
 	opts := options.Find()
 	opts.SetLimit(int64(limit))
 	opts.SetSkip(int64(offset))
@@ -80,9 +80,9 @@ func (r *ReservationRepository) GetByUserID(ctx context.Context, userID primitiv
 	}
 	defer cursor.Close(ctx)
 
-	var reservations []*reservation.Reservation
+	var reservations []*model.Reservation
 	for cursor.Next(ctx) {
-		var res reservation.Reservation
+		var res model.Reservation
 		if err := cursor.Decode(&res); err != nil {
 			return nil, err
 		}
@@ -93,7 +93,7 @@ func (r *ReservationRepository) GetByUserID(ctx context.Context, userID primitiv
 }
 
 // GetByRestaurantID retrieves reservations by restaurant ID.
-func (r *ReservationRepository) GetByRestaurantID(ctx context.Context, restaurantID primitive.ObjectID, limit, offset int) ([]*reservation.Reservation, error) {
+func (r *ReservationRepository) GetByRestaurantID(ctx context.Context, restaurantID primitive.ObjectID, limit, offset int) ([]*model.Reservation, error) {
 	opts := options.Find()
 	opts.SetLimit(int64(limit))
 	opts.SetSkip(int64(offset))
@@ -105,9 +105,9 @@ func (r *ReservationRepository) GetByRestaurantID(ctx context.Context, restauran
 	}
 	defer cursor.Close(ctx)
 
-	var reservations []*reservation.Reservation
+	var reservations []*model.Reservation
 	for cursor.Next(ctx) {
-		var res reservation.Reservation
+		var res model.Reservation
 		if err := cursor.Decode(&res); err != nil {
 			return nil, err
 		}
@@ -118,7 +118,7 @@ func (r *ReservationRepository) GetByRestaurantID(ctx context.Context, restauran
 }
 
 // GetByDateRange retrieves reservations within a date range.
-func (r *ReservationRepository) GetByDateRange(ctx context.Context, restaurantID primitive.ObjectID, startDate, endDate string) ([]*reservation.Reservation, error) {
+func (r *ReservationRepository) GetByDateRange(ctx context.Context, restaurantID primitive.ObjectID, startDate, endDate string) ([]*model.Reservation, error) {
 	// Parse dates
 	startTime, err := time.Parse("2006-01-02", startDate)
 	if err != nil {
@@ -149,9 +149,9 @@ func (r *ReservationRepository) GetByDateRange(ctx context.Context, restaurantID
 	}
 	defer cursor.Close(ctx)
 
-	var reservations []*reservation.Reservation
+	var reservations []*model.Reservation
 	for cursor.Next(ctx) {
-		var res reservation.Reservation
+		var res model.Reservation
 		if err := cursor.Decode(&res); err != nil {
 			return nil, err
 		}
@@ -178,10 +178,10 @@ func (r *ReservationRepository) CheckAvailability(ctx context.Context, restauran
 		"restaurant_id": restaurantID,
 		"room_id":       roomID.Hex(),
 		"status": bson.M{
-			"$in": []reservation.Status{
-				reservation.StatusPending,
-				reservation.StatusConfirmed,
-				reservation.StatusArrived,
+			"$in": []model.Status{
+				model.StatusPending,
+				model.StatusConfirmed,
+				model.StatusArrived,
 			},
 		},
 		"$or": []bson.M{

@@ -1,88 +1,336 @@
 basePath: /api/v1
 definitions:
-  auth.AuthResponse:
+  model.AdminUpdateEmployeeRequest:
     properties:
-      access_token:
-        type: string
-      expires_at:
-        type: string
-      expires_in:
-        type: integer
-      refresh_token:
-        type: string
-      token_type:
-        type: string
-      user:
-        $ref: '#/definitions/auth.UserInfo'
+      restaurantsIds:
+        items:
+          type: string
+        minItems: 1
+        type: array
+      role:
+        $ref: '#/definitions/model.Role'
+    required:
+    - restaurantsIds
+    - role
     type: object
-  auth.LoginRequest:
+  model.AuthInitResponse:
+    properties:
+      codeRequestId:
+        type: string
+    type: object
+  model.CityResponse:
+    properties:
+      averageSalary:
+        type: number
+      country:
+        type: string
+      countryCode:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      salaryCoefficient:
+        type: number
+      utcOffset:
+        type: integer
+    type: object
+  model.CreateEmployeeInvitationRequest:
     properties:
       email:
         type: string
-      password:
-        minLength: 6
+      fullName:
+        maxLength: 100
+        minLength: 2
+        type: string
+      restaurantsIds:
+        items:
+          type: string
+        minItems: 1
+        type: array
+      role:
+        enum:
+        - admin
+        - employee
+        - owner
         type: string
     required:
     - email
-    - password
+    - fullName
+    - restaurantsIds
+    - role
     type: object
-  auth.RegisterRequest:
+  model.CreateReservationRequest:
     properties:
+      duration:
+        description: 'Format: "2:30" (2 hours 30 minutes)'
+        type: string
       email:
         type: string
       full_name:
         maxLength: 100
         minLength: 2
         type: string
-      password:
-        minLength: 6
+      guest_count:
+        maximum: 20
+        minimum: 1
+        type: integer
+      phone:
+        type: string
+      start_at:
+        type: string
+      table_id:
+        type: string
+      user_notes:
+        maxLength: 500
         type: string
     required:
+    - duration
     - email
     - full_name
-    - password
+    - guest_count
+    - phone
+    - start_at
+    - table_id
     type: object
-  auth.UserInfo:
+  model.CreateRestaurantRequest:
     properties:
-      email:
+      address:
+        maxLength: 200
+        minLength: 5
         type: string
-      full_name:
+      city:
+        maxLength: 100
+        minLength: 1
         type: string
-      has_email:
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      phone:
+        type: string
+    required:
+    - address
+    - city
+    - name
+    - phone
+    type: object
+  model.CreateRoomRequest:
+    properties:
+      closedDates:
+        items:
+          type: string
+        type: array
+      isEnabled:
         type: boolean
-      has_telegram:
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      tables:
+        items:
+          $ref: '#/definitions/model.Table'
+        type: array
+      workHours:
+        $ref: '#/definitions/model.WorkHours'
+    required:
+    - name
+    type: object
+  model.CreateSubURLRequest:
+    properties:
+      key:
+        maxLength: 50
+        minLength: 1
+        type: string
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+    required:
+    - key
+    - name
+    type: object
+  model.DayHours:
+    properties:
+      closeTime:
+        description: HH:MM format
+        type: string
+      isOpen:
         type: boolean
+      openTime:
+        description: HH:MM format
+        type: string
+    type: object
+  model.Element:
+    properties:
+      code:
+        $ref: '#/definitions/model.ElementCode'
+      fontSize:
+        type: integer
+      height:
+        type: integer
       id:
         type: string
+      index:
+        type: integer
+      isEnabled:
+        type: boolean
+      roomId:
+        type: string
+      rotation:
+        type: integer
+      seats:
+        items:
+          $ref: '#/definitions/model.Element'
+        type: array
+      tableIndex:
+        type: integer
+      text:
+        type: string
+      type:
+        $ref: '#/definitions/model.ElementType'
+      width:
+        type: integer
+      x:
+        type: number
+      "y":
+        type: number
     type: object
-  auth.VerifyEmailRequest:
+  model.ElementCode:
+    enum:
+    - WINDOW
+    - WALL
+    - ROUNDED_WALL
+    - POLYGONAL_WALL
+    - CHAIR
+    - ARMCHAIR_1
+    - ARMCHAIR_2
+    - SQUARE_TABLE
+    - ROUNDED_TABLE
+    - TEXT
+    - ARROW
+    - CHAIR_SLOT
+    - ACTIVE_CHAIR_SLOT
+    - SOURCE
+    - SOFA_LEFT_ARM_LONG
+    - SOFA_LEFT_ARM_SHORT
+    - SOFA_LEFT_NO_ARM
+    - SOFA_SEMI_LEFT_ARM_LONG
+    - SOFA_SEMI_LEFT_ARM_SHORT
+    - SOFA_SEMI_LEFT_NO_ARM
+    - SOFA_RIGHT_ARM_LONG
+    - SOFA_RIGHT_ARM_SHORT
+    - SOFA_RIGHT_NO_ARM
+    - SOFA_SEMI_RIGHT_ARM_LONG
+    - SOFA_SEMI_RIGHT_ARM_SHORT
+    - SOFA_SEMI_RIGHT_NO_ARM
+    - SOFA_RIGHT_CONNECTOR
+    - SOFA_MIDDLE_CONNECTOR
+    - SOFA_LEFT_CONNECTOR
+    type: string
+    x-enum-varnames:
+    - ElementCodeWindow
+    - ElementCodeWall
+    - ElementCodeRoundedWall
+    - ElementCodePolygonalWall
+    - ElementCodeChair
+    - ElementCodeArmchair1
+    - ElementCodeArmchair2
+    - ElementCodeSquareTable
+    - ElementCodeRoundedTable
+    - ElementCodeText
+    - ElementCodeArrow
+    - ElementCodeChairSlot
+    - ElementCodeActiveChairSlot
+    - ElementCodeSource
+    - ElementCodeSofaLeftArmLong
+    - ElementCodeSofaLeftArmShort
+    - ElementCodeSofaLeftNoArm
+    - ElementCodeSofaSemiLeftArmLong
+    - ElementCodeSofaSemiLeftArmShort
+    - ElementCodeSofaSemiLeftNoArm
+    - ElementCodeSofaRightArmLong
+    - ElementCodeSofaRightArmShort
+    - ElementCodeSofaRightNoArm
+    - ElementCodeSofaSemiRightArmLong
+    - ElementCodeSofaSemiRightArmShort
+    - ElementCodeSofaSemiRightNoArm
+    - ElementCodeSofaRightConnector
+    - ElementCodeSofaMiddleConnector
+    - ElementCodeSofaLeftConnector
+  model.ElementType:
+    enum:
+    - TABLE
+    - SEAT
+    - WALL
+    - TEXT
+    - ARROW
+    type: string
+    x-enum-varnames:
+    - ElementTypeTable
+    - ElementTypeSeat
+    - ElementTypeWall
+    - ElementTypeText
+    - ElementTypeArrow
+  model.EmailUpdateRequest:
+    properties:
+      newEmail:
+        type: string
+    required:
+    - newEmail
+    type: object
+  model.EmailUpdateResponse:
+    properties:
+      codeRequestId:
+        type: string
+    type: object
+  model.EmailVerifyRequest:
     properties:
       code:
         type: string
-      email:
+      codeRequestId:
         type: string
     required:
     - code
-    - email
+    - codeRequestId
     type: object
-  city.CityResponse:
+  model.Employee:
     properties:
-      average_salary:
-        type: number
-      country:
+      createdAt:
         type: string
-      country_code:
+      email:
+        type: string
+      fullName:
         type: string
       id:
         type: string
-      name:
-        type: string
-      salary_coefficient:
-        type: number
-      utc_offset:
+      restaurants:
+        items:
+          $ref: '#/definitions/model.EmployeeRestaurant'
+        type: array
+      tgChatId:
         type: integer
+      tgId:
+        type: integer
+      tgIsBot:
+        type: boolean
+      tgIsPremium:
+        type: boolean
+      tgLang:
+        type: string
+      tgUsername:
+        type: string
+      updatedAt:
+        type: string
     type: object
-  handler.ErrorResponse:
+  model.EmployeeRestaurant:
+    properties:
+      restaurantId:
+        type: string
+      role:
+        $ref: '#/definitions/model.Role'
+    type: object
+  model.ErrorResponse:
     properties:
       code:
         example: ERR_001
@@ -94,239 +342,396 @@ definitions:
         example: Error message
         type: string
     type: object
-  restaurant.CreateRestaurantRequest:
+  model.LoginRequest:
     properties:
-      address:
-        maxLength: 200
-        minLength: 5
-        type: string
-      description:
-        maxLength: 500
-        type: string
       email:
         type: string
-      name:
+    required:
+    - email
+    type: object
+  model.MarkReservationsAsSeenRequest:
+    properties:
+      mark_all_unseen:
+        type: boolean
+      reservation_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  model.PendingAuthResponse:
+    properties:
+      accessToken:
+        type: string
+      isPending:
+        type: boolean
+    type: object
+  model.PersonalCabinetUpdateRequest:
+    properties:
+      fullName:
         maxLength: 100
         minLength: 2
         type: string
-      phone:
+    type: object
+  model.RegisterRequest:
+    properties:
+      email:
         type: string
-      rooms:
-        items:
-          $ref: '#/definitions/restaurant.Room'
-        type: array
-      settings:
-        $ref: '#/definitions/restaurant.Settings'
-      url_name:
-        maxLength: 50
+      fullName:
+        maxLength: 100
         minLength: 2
         type: string
-      utc_offset:
-        maximum: 14
-        minimum: -12
-        type: integer
     required:
-    - address
     - email
-    - name
-    - phone
-    - url_name
+    - fullName
     type: object
-  restaurant.DayHours:
+  model.ReservationCountsResponse:
     properties:
-      close_time:
-        description: HH:MM format
-        type: string
-      is_open:
-        type: boolean
-      open_time:
-        description: HH:MM format
-        type: string
+      pending_count:
+        type: integer
+      unseen_count:
+        type: integer
     type: object
-  restaurant.RestaurantResponse:
+  model.ReservationResponse:
     properties:
-      address:
+      code:
         type: string
       created_at:
         type: string
-      description:
-        type: string
+      duration_minutes:
+        type: integer
       email:
         type: string
+      end_at:
+        type: string
+      full_name:
+        type: string
+      guest_count:
+        type: integer
       id:
         type: string
       is_active:
         type: boolean
+      phone:
+        type: string
+      restaurantId:
+        type: string
+      room_id:
+        type: string
+      start_at:
+        type: string
+      status:
+        $ref: '#/definitions/model.Status'
+      table_id:
+        type: string
+      time_slot:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      user_notes:
+        type: string
+    type: object
+  model.RestaurantAvailabilityResponse:
+    properties:
+      date:
+        description: YYYY-MM-DD format
+        type: string
+      isAvailable:
+        type: boolean
+      restaurantId:
+        type: string
+      rooms:
+        items:
+          $ref: '#/definitions/model.RoomAvailability'
+        type: array
+      urlName:
+        type: string
+    type: object
+  model.RestaurantResponse:
+    properties:
+      address:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
       name:
         type: string
       phone:
         type: string
-      room_count:
+      roomCount:
         type: integer
       settings:
-        $ref: '#/definitions/restaurant.Settings'
-      updated_at:
+        $ref: '#/definitions/model.Settings'
+      updatedAt:
         type: string
-      url_name:
+      urlName:
         type: string
-      utc_offset:
+      utcOffset:
         type: integer
     type: object
-  restaurant.Room:
+  model.Role:
+    enum:
+    - owner
+    - admin
+    - employee
+    type: string
+    x-enum-varnames:
+    - RoleOwner
+    - RoleAdmin
+    - RoleEmployee
+  model.Room:
     properties:
-      closed_dates:
+      closedDates:
         description: YYYY-MM-DD format
         items:
           type: string
         type: array
+      elements:
+        items:
+          $ref: '#/definitions/model.Element'
+        type: array
       id:
         type: string
-      is_enabled:
+      isEnabled:
         type: boolean
       name:
         type: string
       tables:
         items:
-          $ref: '#/definitions/restaurant.Table'
+          $ref: '#/definitions/model.Table'
         type: array
-      work_hours:
-        $ref: '#/definitions/restaurant.WorkHours'
+      workHours:
+        $ref: '#/definitions/model.WorkHours'
     type: object
-  restaurant.Settings:
+  model.RoomAvailability:
     properties:
-      auto_reservation_accepting:
+      isAvailable:
         type: boolean
-      default_reservation_duration:
+      reason:
+        description: closed, no_tables, etc.
+        type: string
+      roomId:
+        type: string
+      roomName:
+        type: string
+    type: object
+  model.SaveElementsRequest:
+    properties:
+      elements:
+        items:
+          $ref: '#/definitions/model.Element'
+        type: array
+    required:
+    - elements
+    type: object
+  model.Settings:
+    properties:
+      autoReservationAccepting:
+        type: boolean
+      defaultReservationDuration:
         description: minutes
         type: integer
-      max_guests_per_reservation:
+      maxDaysInAdvance:
+        type: integer
+      maxGuestsPerReservation:
+        description: Legacy fields for backward compatibility (these will be deprecated)
+        type: integer
+      maxReservationDuration:
+        description: HH:MM format
+        type: string
+      minReservationDuration:
+        description: HH:MM format
+        type: string
+      reservationIntervalMinutes:
+        type: integer
+      reservationReminderMinutes:
         type: integer
     type: object
-  restaurant.Table:
+  model.Status:
+    enum:
+    - BOOKING
+    - PENDING
+    - CONFIRMED
+    - ARRIVED
+    - COMPLETED
+    - NO_SHOW
+    - CANCELED_BY_CLIENT
+    - CANCELED_BY_ADMIN
+    type: string
+    x-enum-varnames:
+    - StatusBooking
+    - StatusPending
+    - StatusConfirmed
+    - StatusArrived
+    - StatusCompleted
+    - StatusNoShow
+    - StatusCanceledByClient
+    - StatusCanceledByAdmin
+  model.Table:
     properties:
       capacity:
         type: integer
       id:
         type: string
-      is_enabled:
+      isEnabled:
         type: boolean
       name:
         type: string
     type: object
-  restaurant.WorkHours:
+  model.TelegramAuthResponse:
     properties:
-      friday:
-        $ref: '#/definitions/restaurant.DayHours'
-      monday:
-        $ref: '#/definitions/restaurant.DayHours'
-      saturday:
-        $ref: '#/definitions/restaurant.DayHours'
-      sunday:
-        $ref: '#/definitions/restaurant.DayHours'
-      thursday:
-        $ref: '#/definitions/restaurant.DayHours'
-      tuesday:
-        $ref: '#/definitions/restaurant.DayHours'
-      wednesday:
-        $ref: '#/definitions/restaurant.DayHours'
+      authRequestId:
+        type: string
+      tgUrl:
+        type: string
     type: object
-  user.CreateUserRequest:
+  model.TelegramConnectionResponse:
     properties:
-      email:
+      connectionRequestId:
         type: string
-      full_name:
-        maxLength: 100
-        minLength: 2
+      tgUrl:
         type: string
-      restaurants:
+    type: object
+  model.TelegramConnectionVerifyResponse:
+    properties:
+      isPending:
+        type: boolean
+      success:
+        type: boolean
+    type: object
+  model.UpdateElementRequest:
+    properties:
+      code:
+        $ref: '#/definitions/model.ElementCode'
+      fontSize:
+        type: integer
+      height:
+        type: integer
+      index:
+        type: integer
+      isEnabled:
+        type: boolean
+      rotation:
+        type: integer
+      seats:
         items:
-          $ref: '#/definitions/user.UserRestaurant'
+          $ref: '#/definitions/model.Element'
         type: array
-      role:
-        type: string
-      tg_chat_id:
+      tableIndex:
         type: integer
-      tg_id:
-        type: integer
-      tg_is_bot:
-        type: boolean
-      tg_is_premium:
-        type: boolean
-      tg_lang:
+      text:
         type: string
-      tg_username:
+      type:
+        $ref: '#/definitions/model.ElementType'
+      width:
+        type: integer
+      x:
+        type: number
+      "y":
+        type: number
+    type: object
+  model.UpdateReservationRequest:
+    properties:
+      admin_notes:
+        type: string
+      cancellation_reason:
+        type: string
+      duration:
+        type: string
+      end_at:
+        type: string
+      guest_count:
+        maximum: 20
+        minimum: 1
+        type: integer
+      start_at:
+        type: string
+      table_id:
+        type: string
+    type: object
+  model.UpdateReservationStatusRequest:
+    properties:
+      admin_notes:
+        type: string
+      cancellation_reason:
+        type: string
+      status:
+        $ref: '#/definitions/model.Status'
+    required:
+    - status
+    type: object
+  model.UpdateRestaurantSettingsRequest:
+    properties:
+      autoReservationAccepting:
+        type: boolean
+      defaultReservationDuration:
+        type: integer
+      maxGuestsPerReservation:
+        type: integer
+    type: object
+  model.UpdateRoomRequest:
+    properties:
+      closedDates:
+        items:
+          type: string
+        type: array
+      isEnabled:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      tables:
+        items:
+          $ref: '#/definitions/model.Table'
+        type: array
+      workHours:
+        $ref: '#/definitions/model.WorkHours'
+    type: object
+  model.UrlNameAvailabilityResponse:
+    properties:
+      isAvailable:
+        type: boolean
+    type: object
+  model.VerifyEmailRequest:
+    properties:
+      code:
+        type: string
+      codeRequestId:
         type: string
     required:
-    - full_name
+    - code
+    - codeRequestId
     type: object
-  user.Role:
-    enum:
-    - owner
-    - manager
-    - employee
-    - user
-    type: string
-    x-enum-varnames:
-    - RoleOwner
-    - RoleManager
-    - RoleEmployee
-    - RoleUser
-  user.UpdateUserRequest:
+  model.VerifyResponse:
     properties:
-      email:
-        type: string
-      full_name:
-        maxLength: 100
-        minLength: 2
-        type: string
-      tg_chat_id:
-        type: integer
-      tg_id:
-        type: integer
-      tg_is_bot:
-        type: boolean
-      tg_is_premium:
-        type: boolean
-      tg_lang:
-        type: string
-      tg_username:
+      accessToken:
         type: string
     type: object
-  user.UserResponse:
+  model.WorkHours:
     properties:
-      created_at:
-        type: string
-      email:
-        type: string
-      full_name:
-        type: string
-      id:
-        type: string
-      restaurants:
-        items:
-          $ref: '#/definitions/user.UserRestaurant'
-        type: array
-      tg_chat_id:
-        type: integer
-      tg_id:
-        type: integer
-      tg_is_bot:
-        type: boolean
-      tg_is_premium:
-        type: boolean
-      tg_lang:
-        type: string
-      tg_username:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  user.UserRestaurant:
-    properties:
-      restaurant_id:
-        type: string
-      role:
-        $ref: '#/definitions/user.Role'
+      friday:
+        $ref: '#/definitions/model.DayHours'
+      monday:
+        $ref: '#/definitions/model.DayHours'
+      saturday:
+        $ref: '#/definitions/model.DayHours'
+      sunday:
+        $ref: '#/definitions/model.DayHours'
+      thursday:
+        $ref: '#/definitions/model.DayHours'
+      tuesday:
+        $ref: '#/definitions/model.DayHours'
+      wednesday:
+        $ref: '#/definitions/model.DayHours'
     type: object
 host: localhost:8080
 info:
@@ -342,36 +747,6 @@ info:
   title: Reservia API
   version: "1.0"
 paths:
-  /api/v1/auth/by_reservation/{reservationID}:
-    get:
-      consumes:
-      - application/json
-      description: Quick access authorization using reservation ID
-      parameters:
-      - description: Reservation ID
-        in: path
-        name: reservationID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-      summary: Authorize by reservation ID
-      tags:
-      - authentication
   /api/v1/auth/login:
     post:
       consumes:
@@ -383,26 +758,26 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/auth.LoginRequest'
+          $ref: '#/definitions/model.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/auth.AuthResponse'
+            $ref: '#/definitions/model.AuthInitResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
       summary: User login
       tags:
       - authentication
@@ -417,55 +792,96 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/auth.RegisterRequest'
+          $ref: '#/definitions/model.RegisterRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/auth.AuthResponse'
+            $ref: '#/definitions/model.AuthInitResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
       summary: User registration
       tags:
       - authentication
-  /api/v1/auth/telegram:
-    post:
+  /api/v1/auth/register/employee:
+    get:
       consumes:
       - application/json
-      description: Initiate Telegram authorization process
+      description: Complete employee registration using invitation link with code_request_id
+        and code
+      parameters:
+      - description: Code Request ID from invitation
+        in: query
+        name: code_request_id
+        required: true
+        type: string
+      - description: Invitation code
+        in: query
+        name: code
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/model.VerifyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-      summary: Authorize via Telegram
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Complete employee registration via invitation
       tags:
       - authentication
-  /api/v1/auth/telegram/{requestID}:
+  /api/v1/auth/tg:
     get:
       consumes:
       - application/json
-      description: Check status of Telegram authorization request
+      description: Initiate Telegram authorization process for admin bot
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.TelegramAuthResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Authorize via Telegram (Admin Bot)
+      tags:
+      - authentication
+  /api/v1/auth/tg/{requestID}:
+    get:
+      consumes:
+      - application/json
+      description: Check status of Telegram authorization request from admin bot
       parameters:
       - description: Request ID
         in: path
@@ -478,17 +894,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: boolean
-            type: object
+            $ref: '#/definitions/model.PendingAuthResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
       summary: Verify Telegram authorization
       tags:
       - authentication
@@ -503,28 +917,26 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/auth.VerifyEmailRequest'
+          $ref: '#/definitions/model.VerifyEmailRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/model.VerifyResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
       summary: Verify email code
       tags:
       - authentication
@@ -533,11 +945,6 @@ paths:
       consumes:
       - application/json
       description: Retrieve all available cities with their information
-      parameters:
-      - description: Filter by country code or name
-        in: query
-        name: country
-        type: string
       produces:
       - application/json
       responses:
@@ -545,12 +952,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/city.CityResponse'
+              $ref: '#/definitions/model.CityResponse'
             type: array
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
       summary: Get all cities
       tags:
       - cities
@@ -571,15 +978,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/city.CityResponse'
+            $ref: '#/definitions/model.CityResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/model.ErrorResponse'
       summary: Get city by name
       tags:
       - cities
@@ -600,187 +1007,695 @@ paths:
       summary: Development ping endpoint
       tags:
       - development
-  /api/v1/restaurants/{restaurantID}/rooms:
+  /employees:
     get:
       consumes:
       - application/json
-      description: Retrieve all rooms for a specific restaurant
-      parameters:
-      - description: Restaurant ID
-        in: path
-        name: restaurantID
-        required: true
-        type: string
+      description: Retrieve all employees from restaurants where the requester has
+        access
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: List of all employees
           schema:
-            items:
-              $ref: '#/definitions/restaurant.Room'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-      summary: Get all rooms for a restaurant
-      tags:
-      - rooms
-    post:
-      consumes:
-      - application/json
-      description: Create a new room in a restaurant (placeholder implementation)
-      parameters:
-      - description: Restaurant ID
-        in: path
-        name: restaurantID
-        required: true
-        type: string
-      - description: Room creation request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/restaurant.Room'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/restaurant.Room'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-        "501":
-          description: Not Implemented
-          schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-      summary: Create a new room
-      tags:
-      - rooms
-  /api/v1/restaurants/{restaurantID}/rooms/{roomID}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete a specific room from a restaurant (placeholder implementation)
-      parameters:
-      - description: Restaurant ID
-        in: path
-        name: restaurantID
-        required: true
-        type: string
-      - description: Room ID
-        in: path
-        name: roomID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
+            additionalProperties: true
+            type: object
+        "403":
+          description: Insufficient permissions
           schema:
             additionalProperties:
               type: string
             type: object
-        "400":
-          description: Bad Request
+        "500":
+          description: Internal server error
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-        "501":
-          description: Not Implemented
-          schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-      summary: Delete a room
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List employees
       tags:
-      - rooms
+      - employees
+  /employees/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove an employee's access to restaurants where the requester
+        has ManageEmployees permission (matches Python DELETE /employees/{id})
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Restaurant IDs to remove access from
+        in: body
+        name: restaurants
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Employee updated successfully
+          schema:
+            $ref: '#/definitions/model.Employee'
+        "400":
+          description: Invalid employee ID or request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied - insufficient permissions
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Employee not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Cannot remove owner from restaurant
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Remove employee from shared restaurants
+      tags:
+      - employees
     get:
       consumes:
       - application/json
-      description: Retrieve a specific room by ID from a restaurant
+      description: Retrieve an employee by their unique ID (only if requester has
+        access to employee's restaurants)
       parameters:
-      - description: Restaurant ID
+      - description: Employee ID
         in: path
-        name: restaurantID
-        required: true
-        type: string
-      - description: Room ID
-        in: path
-        name: roomID
+        name: id
         required: true
         type: string
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Employee found
           schema:
-            $ref: '#/definitions/restaurant.Room'
+            $ref: '#/definitions/model.Employee'
         "400":
-          description: Bad Request
+          description: Invalid employee ID
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied - no shared restaurants
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
-          description: Not Found
+          description: Employee not found
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-      summary: Get a specific room
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get employee by ID
       tags:
-      - rooms
+      - employees
+    put:
+      consumes:
+      - application/json
+      description: Update an employee's role assignments in specified restaurants
+        (admin only, matches Python PutEmployeeSchema)
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role assignment data
+        in: body
+        name: employee
+        required: true
+        schema:
+          $ref: '#/definitions/model.AdminUpdateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Employee roles updated successfully
+          schema:
+            $ref: '#/definitions/model.Employee'
+        "400":
+          description: Invalid request or self-update attempt
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied - insufficient permissions
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Employee not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update employee role assignments (admin only)
+      tags:
+      - employees
+  /employees/invitations:
     patch:
       consumes:
       - application/json
-      description: Update a specific room in a restaurant (placeholder implementation)
+      description: Update details of a pending invitation
       parameters:
-      - description: Restaurant ID
-        in: path
-        name: restaurantID
-        required: true
-        type: string
-      - description: Room ID
-        in: path
-        name: roomID
-        required: true
-        type: string
-      - description: Room update request
+      - description: Invitation update data
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/restaurant.Room'
+          additionalProperties: true
+          type: object
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Invitation updated successfully
           schema:
-            $ref: '#/definitions/restaurant.Room'
+            additionalProperties: true
+            type: object
         "400":
-          description: Bad Request
+          description: Invalid request body
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-        "501":
-          description: Not Implemented
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Invitation not found
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-      summary: Update a room
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update employee invitation
       tags:
-      - rooms
+      - employees
+  /employees/invitations/{invitationId}:
+    delete:
+      consumes:
+      - application/json
+      description: Cancel a pending employee invitation
+      parameters:
+      - description: Invitation ID
+        in: path
+        name: invitationId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Invitation cancelled successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid invitation ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Invitation not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Cancel employee invitation
+      tags:
+      - employees
+  /employees/invitations/extend:
+    post:
+      consumes:
+      - application/json
+      description: Extend the expiration date of a pending invitation
+      parameters:
+      - description: Invitation extension data
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Invitation extended successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Invitation not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Extend employee invitation
+      tags:
+      - employees
+  /employees/invitations/pending:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all pending employee invitations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of pending invitations
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get pending employee invitations
+      tags:
+      - employees
+  /employees/invite:
+    post:
+      consumes:
+      - application/json
+      description: Create an invitation for a new employee to join specified restaurants
+        (matches Python POST /employees)
+      parameters:
+      - description: Employee invitation data
+        in: body
+        name: invitation
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateEmployeeInvitationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Invitation created successfully
+          schema:
+            $ref: '#/definitions/model.AuthInitResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create employee invitation
+      tags:
+      - employees
+  /employees/me:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the currently authenticated employee's information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Current employee information
+          schema:
+            $ref: '#/definitions/model.Employee'
+        "401":
+          description: Unauthorized - no authenticated employee
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Employee not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current employee
+      tags:
+      - employees
+    patch:
+      consumes:
+      - application/json
+      description: Update the currently authenticated employee's profile information
+      parameters:
+      - description: Employee profile update data
+        in: body
+        name: employee
+        required: true
+        schema:
+          $ref: '#/definitions/model.PersonalCabinetUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Employee profile updated successfully
+          schema:
+            $ref: '#/definitions/model.Employee'
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized - invalid or missing token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Employee not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update current employee profile
+      tags:
+      - employees
+  /employees/me/email:
+    delete:
+      consumes:
+      - application/json
+      description: Disconnect the current employee's email account
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email disconnected successfully
+          schema:
+            $ref: '#/definitions/model.Employee'
+        "401":
+          description: Unauthorized - invalid or missing token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Employee not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Disconnect email account
+      tags:
+      - employees
+  /employees/me/email/update:
+    post:
+      consumes:
+      - application/json
+      description: Initiate email update process with verification code
+      parameters:
+      - description: Email update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.EmailUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email update initiated
+          schema:
+            $ref: '#/definitions/model.EmailUpdateResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized - invalid or missing token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Request email update
+      tags:
+      - employees
+  /employees/me/email/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verify new email address with verification code
+      parameters:
+      - description: Email verification request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.EmailVerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email updated successfully
+          schema:
+            $ref: '#/definitions/model.Employee'
+        "400":
+          description: Invalid request body or verification code
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized - invalid or missing token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Verify email update
+      tags:
+      - employees
+  /employees/me/telegram:
+    delete:
+      consumes:
+      - application/json
+      description: Disconnect the current employee's Telegram account
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Telegram disconnected successfully
+          schema:
+            $ref: '#/definitions/model.Employee'
+        "401":
+          description: Unauthorized - invalid or missing token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Employee not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Disconnect Telegram account
+      tags:
+      - employees
+  /employees/me/telegram/connect:
+    post:
+      consumes:
+      - application/json
+      description: Initiate Telegram account connection process
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Telegram connection initiated
+          schema:
+            $ref: '#/definitions/model.TelegramConnectionResponse'
+        "401":
+          description: Unauthorized - invalid or missing token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Connect Telegram account
+      tags:
+      - employees
+  /employees/me/telegram/connect/{requestId}:
+    get:
+      consumes:
+      - application/json
+      description: Check the status of a Telegram connection request
+      parameters:
+      - description: Connection request ID
+        in: path
+        name: requestId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Connection status
+          schema:
+            $ref: '#/definitions/model.TelegramConnectionVerifyResponse'
+        "400":
+          description: Invalid request ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized - invalid or missing token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Connection request not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Check Telegram connection status
+      tags:
+      - employees
   /health:
     get:
       description: Check if the API is running and healthy
@@ -809,6 +1724,196 @@ paths:
       summary: Prometheus metrics endpoint
       tags:
       - metrics
+  /reservations/{reservationId}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific reservation by its ID
+      parameters:
+      - description: Reservation ID
+        in: path
+        name: reservationId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reservation retrieved successfully
+          schema:
+            $ref: '#/definitions/model.ReservationResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservation not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get reservation by ID
+      tags:
+      - reservations
+  /reservations/{reservationId}/by_admin:
+    patch:
+      consumes:
+      - application/json
+      description: Update a reservation by an admin employee
+      parameters:
+      - description: Reservation ID
+        in: path
+        name: reservationId
+        required: true
+        type: string
+      - description: Reservation update data
+        in: body
+        name: reservation
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateReservationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reservation updated successfully
+          schema:
+            $ref: '#/definitions/model.ReservationResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservation not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Reservation conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update reservation by admin
+      tags:
+      - reservations
+  /reservations/{reservationId}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancel a reservation with reason
+      parameters:
+      - description: Reservation ID
+        in: path
+        name: reservationId
+        required: true
+        type: string
+      - description: Cancellation data with reason
+        in: body
+        name: cancelData
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reservation canceled successfully
+          schema:
+            $ref: '#/definitions/model.ReservationResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservation not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Cancel reservation
+      tags:
+      - reservations
+  /reservations/{reservationId}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Update the status of a reservation
+      parameters:
+      - description: Reservation ID
+        in: path
+        name: reservationId
+        required: true
+        type: string
+      - description: Status update data
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateReservationStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Status updated successfully
+          schema:
+            $ref: '#/definitions/model.ReservationResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservation not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update reservation status
+      tags:
+      - reservations
   /restaurants:
     get:
       consumes:
@@ -847,23 +1952,30 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new restaurant with the provided information
+      description: Create a new restaurant with the provided information. The creating
+        employee automatically becomes the owner.
       parameters:
       - description: Restaurant creation data
         in: body
         name: restaurant
         required: true
         schema:
-          $ref: '#/definitions/restaurant.CreateRestaurantRequest'
+          $ref: '#/definitions/model.CreateRestaurantRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Restaurant created successfully
           schema:
-            $ref: '#/definitions/restaurant.RestaurantResponse'
+            $ref: '#/definitions/model.RestaurantResponse'
         "400":
           description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Authentication required
           schema:
             additionalProperties:
               type: string
@@ -874,7 +1986,9 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Create a new restaurant
+      security:
+      - BearerAuth: []
+      summary: Create a new restaurant (bootstrap)
       tags:
       - restaurants
   /restaurants/{id}:
@@ -894,7 +2008,7 @@ paths:
         "200":
           description: Restaurant found
           schema:
-            $ref: '#/definitions/restaurant.RestaurantResponse'
+            $ref: '#/definitions/model.RestaurantResponse'
         "400":
           description: Invalid restaurant ID
           schema:
@@ -910,96 +2024,32 @@ paths:
       summary: Get restaurant by ID
       tags:
       - restaurants
-  /users:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve a list of users with pagination
-      parameters:
-      - description: 'Number of users to return (default: 10)'
-        in: query
-        name: limit
-        type: integer
-      - description: 'Number of users to skip (default: 0)'
-        in: query
-        name: offset
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of users with pagination info
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: List users
-      tags:
-      - users
+  /restaurants/{restaurantId}/disable:
     post:
       consumes:
       - application/json
-      description: Create a new user with the provided information
+      description: Disable a restaurant (set isActive to false)
       parameters:
-      - description: User creation data
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/user.CreateUserRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: User created successfully
-          schema:
-            $ref: '#/definitions/user.UserResponse'
-        "400":
-          description: Invalid request body
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Create a new user
-      tags:
-      - users
-  /users/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete a user by ID
-      parameters:
-      - description: User ID
+      - description: Restaurant ID
         in: path
-        name: id
+        name: restaurantId
         required: true
         type: string
       produces:
       - application/json
       responses:
-        "204":
-          description: User deleted successfully
+        "200":
+          description: Restaurant disabled successfully
           schema:
-            type: string
+            $ref: '#/definitions/model.RestaurantResponse'
         "400":
-          description: Invalid user ID
+          description: Invalid restaurant ID
           schema:
             additionalProperties:
               type: string
             type: object
         "404":
-          description: User not found
+          description: Restaurant not found
           schema:
             additionalProperties:
               type: string
@@ -1010,64 +2060,70 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Delete user
+      security:
+      - BearerAuth: []
+      summary: Disable restaurant
       tags:
-      - users
+      - restaurants
+  /restaurants/{restaurantId}/enable:
+    post:
+      consumes:
+      - application/json
+      description: Enable a restaurant (set isActive to true)
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Restaurant enabled successfully
+          schema:
+            $ref: '#/definitions/model.RestaurantResponse'
+        "400":
+          description: Invalid restaurant ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Restaurant not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Enable restaurant
+      tags:
+      - restaurants
+  /restaurants/{restaurantId}/reservations/counts:
     get:
       consumes:
       - application/json
-      description: Retrieve a user by their unique ID
+      description: Get counts of unseen and pending reservations for a restaurant
       parameters:
-      - description: User ID
+      - description: Restaurant ID
         in: path
-        name: id
+        name: restaurantId
         required: true
         type: string
       produces:
       - application/json
       responses:
         "200":
-          description: User found
+          description: Reservation counts retrieved successfully
           schema:
-            $ref: '#/definitions/user.UserResponse'
-        "400":
-          description: Invalid user ID
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: User not found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Get user by ID
-      tags:
-      - users
-    put:
-      consumes:
-      - application/json
-      description: Update user information by ID
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: User update data
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/user.UpdateUserRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User updated successfully
-          schema:
-            $ref: '#/definitions/user.UserResponse'
+            $ref: '#/definitions/model.ReservationCountsResponse'
         "400":
           description: Invalid request
           schema:
@@ -1075,7 +2131,7 @@ paths:
               type: string
             type: object
         "404":
-          description: User not found
+          description: Restaurant not found
           schema:
             additionalProperties:
               type: string
@@ -1086,9 +2142,992 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Update user
+      security:
+      - BearerAuth: []
+      summary: Get reservation counts
       tags:
-      - users
+      - reservations
+  /restaurants/{restaurantId}/reservations/mark_seen:
+    patch:
+      consumes:
+      - application/json
+      description: Mark specific reservations or all unseen reservations as seen for
+        a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Mark seen request data
+        in: body
+        name: markSeenData
+        required: true
+        schema:
+          $ref: '#/definitions/model.MarkReservationsAsSeenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reservations marked as seen successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Restaurant not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Mark reservations as seen
+      tags:
+      - reservations
+  /restaurants/{restaurantId}/rooms:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all rooms for a specific restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Rooms retrieved successfully
+          schema:
+            items:
+              $ref: '#/definitions/model.Room'
+            type: array
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Restaurant not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all rooms for a restaurant
+      tags:
+      - rooms
+    post:
+      consumes:
+      - application/json
+      description: Create a new room in a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Room creation data
+        in: body
+        name: room
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateRoomRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Room created successfully
+          schema:
+            $ref: '#/definitions/model.Room'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Room name already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new room
+      tags:
+      - rooms
+  /restaurants/{restaurantId}/rooms/{roomId}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a specific room from a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Room deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Room not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a room
+      tags:
+      - rooms
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific room by ID from a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Room retrieved successfully
+          schema:
+            $ref: '#/definitions/model.Room'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Room not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get a specific room
+      tags:
+      - rooms
+    patch:
+      consumes:
+      - application/json
+      description: Update a specific room in a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      - description: Room update data
+        in: body
+        name: room
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateRoomRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Room updated successfully
+          schema:
+            $ref: '#/definitions/model.Room'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Room not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Room name already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a room
+      tags:
+      - rooms
+  /restaurants/{restaurantId}/rooms/{roomId}/disable:
+    post:
+      consumes:
+      - application/json
+      description: Disable a room (set isEnabled to false)
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Room disabled successfully
+          schema:
+            $ref: '#/definitions/model.Room'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Room not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Disable a room
+      tags:
+      - rooms
+  /restaurants/{restaurantId}/rooms/{roomId}/elements:
+    post:
+      consumes:
+      - application/json
+      description: Save multiple elements to a room (replaces all existing elements)
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      - description: Elements to save
+        in: body
+        name: elements
+        required: true
+        schema:
+          $ref: '#/definitions/model.SaveElementsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Elements saved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Room not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Save multiple elements to a room
+      tags:
+      - rooms
+  /restaurants/{restaurantId}/rooms/{roomId}/elements/{elementId}:
+    patch:
+      consumes:
+      - application/json
+      description: Update a specific element in a room
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      - description: Element ID
+        in: path
+        name: elementId
+        required: true
+        type: string
+      - description: Element update data
+        in: body
+        name: element
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateElementRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Element updated successfully
+          schema:
+            $ref: '#/definitions/model.Element'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Element not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update an element
+      tags:
+      - rooms
+  /restaurants/{restaurantId}/rooms/{roomId}/elements/{elementId}/disable:
+    patch:
+      consumes:
+      - application/json
+      description: Disable a specific element in a room
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      - description: Element ID
+        in: path
+        name: elementId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Element disabled successfully
+          schema:
+            $ref: '#/definitions/model.Element'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Element not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Disable an element
+      tags:
+      - rooms
+  /restaurants/{restaurantId}/rooms/{roomId}/elements/{elementId}/enable:
+    patch:
+      consumes:
+      - application/json
+      description: Enable a specific element in a room
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      - description: Element ID
+        in: path
+        name: elementId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Element enabled successfully
+          schema:
+            $ref: '#/definitions/model.Element'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Element not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Enable an element
+      tags:
+      - rooms
+  /restaurants/{restaurantId}/rooms/{roomId}/enable:
+    post:
+      consumes:
+      - application/json
+      description: Enable a room (set isEnabled to true)
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Room enabled successfully
+          schema:
+            $ref: '#/definitions/model.Room'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Room not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Enable a room
+      tags:
+      - rooms
+  /restaurants/{restaurantId}/rooms/{roomId}/reservations:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve reservations for a specific room with optional filtering
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      - description: 'Number of reservations to return (default: 50)'
+        in: query
+        name: limit
+        type: integer
+      - description: 'Number of reservations to skip (default: 0)'
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by table ID
+        in: query
+        name: table_id
+        type: string
+      - description: Filter by date (YYYY-MM-DD format)
+        in: query
+        name: start_date
+        type: string
+      - description: Filter by seen status
+        in: query
+        name: is_seen
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reservations retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Restaurant or room not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get reservations for a room
+      tags:
+      - reservations
+  /restaurants/{restaurantId}/rooms/{roomId}/reservations/by_employee:
+    post:
+      consumes:
+      - application/json
+      description: Create a new reservation by an admin employee
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      - description: Reservation creation data
+        in: body
+        name: reservation
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateReservationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Reservation created successfully
+          schema:
+            $ref: '#/definitions/model.ReservationResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Restaurant or room not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Reservation conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a reservation by employee
+      tags:
+      - reservations
+  /restaurants/{restaurantId}/settings:
+    patch:
+      consumes:
+      - application/json
+      description: Update restaurant settings only
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Restaurant settings update data
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateRestaurantSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Restaurant settings updated successfully
+          schema:
+            $ref: '#/definitions/model.RestaurantResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Restaurant not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update restaurant settings
+      tags:
+      - restaurants
+  /restaurants/{restaurantId}/sub-url:
+    post:
+      consumes:
+      - application/json
+      description: Create a new sub-URL for tracking reservation sources
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Sub-URL creation data
+        in: body
+        name: subURL
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateSubURLRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sub-URL created successfully
+          schema:
+            $ref: '#/definitions/model.RestaurantResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Restaurant not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Sub-URL name or key already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new sub-URL for a restaurant
+      tags:
+      - restaurants
+  /restaurants/{restaurantId}/sub-url/{subUrlId}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a sub-URL from a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantId
+        required: true
+        type: string
+      - description: Sub-URL ID
+        in: path
+        name: subUrlId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sub-URL deleted successfully
+          schema:
+            $ref: '#/definitions/model.RestaurantResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Restaurant or sub-URL not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a sub-URL from a restaurant
+      tags:
+      - restaurants
+  /restaurants/{urlNameOrRestId}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a restaurant by its URL name or ObjectID
+      parameters:
+      - description: Restaurant URL name or ID
+        in: path
+        name: urlNameOrRestId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Restaurant found
+          schema:
+            $ref: '#/definitions/model.RestaurantResponse'
+        "404":
+          description: Restaurant not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get restaurant by URL name or ID
+      tags:
+      - restaurants
+  /restaurants/{urlNameOrRestId}/availability:
+    get:
+      consumes:
+      - application/json
+      description: Get restaurant availability for a specific date
+      parameters:
+      - description: Restaurant URL name or ID
+        in: path
+        name: urlNameOrRestId
+        required: true
+        type: string
+      - description: 'Date in YYYY-MM-DD format (default: today)'
+        in: query
+        name: date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Restaurant availability
+          schema:
+            $ref: '#/definitions/model.RestaurantAvailabilityResponse'
+        "400":
+          description: Invalid date format
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Restaurant not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get restaurant availability
+      tags:
+      - restaurants
+  /restaurants/url-name-availability:
+    get:
+      consumes:
+      - application/json
+      description: Check if a URL name is available for restaurant creation
+      parameters:
+      - description: URL name to check
+        in: query
+        name: url_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL name availability
+          schema:
+            $ref: '#/definitions/model.UrlNameAvailabilityResponse'
+        "400":
+          description: Missing url_name parameter
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Check URL name availability
+      tags:
+      - restaurants
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

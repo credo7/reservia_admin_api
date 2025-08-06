@@ -62,7 +62,7 @@ reservia-api/
 - **Examples**: User, Restaurant, Reservation entities with business logic
 
 ```go
-// Example: User domain with business rules
+// Example: User model with business rules
 type User struct {
     ID    primitive.ObjectID
     Email string

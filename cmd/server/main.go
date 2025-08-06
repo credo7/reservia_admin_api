@@ -23,13 +23,13 @@ package main
 
 import (
 	"context"
+	"github.com/reservia/api/internal/server"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/reservia/api/internal/delivery/http/server"
 	"github.com/reservia/api/pkg/config"
 	"github.com/reservia/api/pkg/database"
 	"github.com/reservia/api/pkg/logger"

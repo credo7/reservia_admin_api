@@ -1,0 +1,69 @@
+# Production Environment Configuration
+
+replicaCount: 2
+
+image:
+  repository: credo7/reservia-admin-api
+  pullPolicy: Always
+  tag: "stable"
+
+# Restart policy
+restartPolicy: Always
+
+# Service configuration (admin-api needs HTTP exposure)
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+# Environment Variables (use secrets in production)
+env:
+  - name: SERVER_PORT
+    value: "8000"
+  - name: DB_NAME
+    value: "reservia"
+  - name: LOG_LEVEL
+    value: "info"
+  - name: MONGODB_URI
+    valueFrom:
+      secretKeyRef:
+        name: mongodb-credentials
+        key: uri
+  - name: JWT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: auth-secret
+        key: jwt_secret
+  - name: RABBITMQ_URI
+    valueFrom:
+      secretKeyRef:
+        name: rabbitmq-credentials
+        key: uri
+  - name: RABBITMQ_QUEUE_NAME
+    value: "email_notifications"
+
+# Resource limits for production
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+# Health checks
+healthcheck:
+  enabled: true
+  path: /health
+  port: 8000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+# Production monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: "monitoring"
+    interval: 30s
+    scrapeTimeout: 10s

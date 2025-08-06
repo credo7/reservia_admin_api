@@ -16,6 +16,8 @@ type Config struct {
 	Database DatabaseConfig
 	Auth     AuthConfig
 	Logger   LoggerConfig
+	RabbitMQ RabbitMQConfig
+	Telegram TelegramConfig
 }
 
 // ServerConfig holds server configuration.
@@ -47,6 +49,18 @@ type LoggerConfig struct {
 	Format string
 }
 
+// RabbitMQConfig holds RabbitMQ configuration.
+type RabbitMQConfig struct {
+	URI       string
+	QueueName string
+}
+
+// TelegramConfig holds Telegram bot configuration.
+type TelegramConfig struct {
+	AdminBotUsername string
+	AdminBotToken    string
+}
+
 // Load loads configuration from environment variables.
 func Load() (*Config, error) {
 	// Load .env file if it exists
@@ -73,6 +87,14 @@ func Load() (*Config, error) {
 		Logger: LoggerConfig{
 			Level:  getEnv("LOG_LEVEL", "info"),
 			Format: getEnv("LOG_FORMAT", "json"),
+		},
+		RabbitMQ: RabbitMQConfig{
+			URI:       getEnv("RABBITMQ_URI", "amqp://localhost:5672"),
+			QueueName: getEnv("EMAIL_QUEUE_NAME", "email_queue"),
+		},
+		Telegram: TelegramConfig{
+			AdminBotUsername: getEnv("TELEGRAM_ADMIN_BOT_USERNAME", "reservia_admin_bot"),
+			AdminBotToken:    getEnv("TELEGRAM_ADMIN_BOT_TOKEN", ""),
 		},
 	}
 

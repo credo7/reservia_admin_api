@@ -3,11 +3,11 @@ package mongodb
 
 import (
 	"context"
+	"github.com/reservia/api/internal/model"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/reservia/api/internal/domain/city"
 	"github.com/reservia/api/internal/repository"
 )
 
@@ -24,16 +24,16 @@ func NewCityRepository(db *mongo.Database) repository.CityRepository {
 }
 
 // GetAll retrieves all cities.
-func (r *CityRepository) GetAll(ctx context.Context) ([]*city.City, error) {
+func (r *CityRepository) GetAll(ctx context.Context) ([]*model.City, error) {
 	cursor, err := r.collection.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 
-	var cities []*city.City
+	var cities []*model.City
 	for cursor.Next(ctx) {
-		var c city.City
+		var c model.City
 		if err := cursor.Decode(&c); err != nil {
 			return nil, err
 		}
@@ -44,8 +44,8 @@ func (r *CityRepository) GetAll(ctx context.Context) ([]*city.City, error) {
 }
 
 // GetByName retrieves a city by name.
-func (r *CityRepository) GetByName(ctx context.Context, name string) (*city.City, error) {
-	var c city.City
+func (r *CityRepository) GetByName(ctx context.Context, name string) (*model.City, error) {
+	var c model.City
 	err := r.collection.FindOne(ctx, bson.M{"name": name}).Decode(&c)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -57,7 +57,7 @@ func (r *CityRepository) GetByName(ctx context.Context, name string) (*city.City
 }
 
 // GetByCountry retrieves cities by country.
-func (r *CityRepository) GetByCountry(ctx context.Context, country string) ([]*city.City, error) {
+func (r *CityRepository) GetByCountry(ctx context.Context, country string) ([]*model.City, error) {
 	filter := bson.M{
 		"$or": []bson.M{
 			{"country": country},
@@ -71,9 +71,9 @@ func (r *CityRepository) GetByCountry(ctx context.Context, country string) ([]*c
 	}
 	defer cursor.Close(ctx)
 
-	var cities []*city.City
+	var cities []*model.City
 	for cursor.Next(ctx) {
-		var c city.City
+		var c model.City
 		if err := cursor.Decode(&c); err != nil {
 			return nil, err
 		}

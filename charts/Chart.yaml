@@ -1,0 +1,18 @@
+apiVersion: v2
+name: reservia-admin-api
+description: Reservia Admin API - Restaurant reservation management admin API
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - reservia
+  - admin
+  - api
+  - golang
+  - restaurant
+maintainers:
+  - name: Vitaly
+    email: vitaly.credo@gmail.com
+home: https://github.com/reservia_admin_api
+sources:
+  - https://github.com/reservia_admin_api

@@ -24,7 +24,7 @@ internal/
 ## 🚀 Features Migrated
 
 ### ✅ Completed
-- **Domain Entities**: User, Restaurant, Reservation, Auth, City
+- **Domain Entities**: Employee, Restaurant, Reservation, Auth, City
 - **Repository Pattern**: MongoDB implementations with interfaces
 - **Use Cases**: Business logic layer with dependency injection
 - **HTTP Handlers**: RESTful API endpoints with proper error handling
@@ -35,12 +35,16 @@ internal/
 
 ### 🔧 API Endpoints Available
 
-#### User Management
-- `POST /api/v1/users` - Create a new user
-- `GET /api/v1/users` - List users with pagination
-- `GET /api/v1/users/{id}` - Get user by ID
-- `PUT /api/v1/users/{id}` - Update user
-- `DELETE /api/v1/users/{id}` - Delete user
+#### Employee Management
+- `POST /api/v1/employees` - Create a new employee
+- `GET /api/v1/employees` - List employees with pagination
+- `GET /api/v1/employees/{id}` - Get employee by ID
+- `PUT /api/v1/employees/{id}` - Update employee
+- `DELETE /api/v1/employees/{id}` - Delete employee
+
+#### Authentication (Admin Bot Integration)
+- `GET /api/v1/auth/tg` - Get Telegram authorization URL for reservia-admin-bot
+- `GET /api/v1/auth/tg/{requestId}` - Check authorization status from admin bot
 
 #### System
 - `GET /health` - Health check endpoint
@@ -69,7 +73,7 @@ internal/
 The easiest way to get started:
 
 ```bash
-cd reservia-api-clean
+cd reservia-admin-api
 ./start.sh
 ```
 
@@ -83,7 +87,7 @@ This script will:
 ### 1. Clone and Build
 
 ```bash
-cd reservia-api-clean
+cd reservia-admin-api
 go mod tidy
 go build -o build/reservia-api cmd/server/main.go
 ```
@@ -153,24 +157,34 @@ make swagger
 curl http://localhost:8080/health
 ```
 
-### Create a User
+### Create an Employee
 ```bash
-curl -X POST http://localhost:8080/api/v1/users \
+curl -X POST http://localhost:8080/api/v1/employees \
   -H "Content-Type: application/json" \
   -d '{
     "full_name": "John Doe",
-    "email": "john@example.com"
+    "email": "john@example.com",
+    "role": "manager"
   }'
 ```
 
-### List Users
+### List Employees
 ```bash
-curl http://localhost:8080/api/v1/users?limit=10&offset=0
+curl http://localhost:8080/api/v1/employees?limit=10&offset=0
 ```
 
-### Get User by ID
+### Get Employee by ID
 ```bash
-curl http://localhost:8080/api/v1/users/{user_id}
+curl http://localhost:8080/api/v1/employees/{employee_id}
+```
+
+### Telegram Admin Bot Authorization
+```bash
+# Get authorization URL
+curl http://localhost:8080/api/v1/auth/tg
+
+# Check authorization status
+curl http://localhost:8080/api/v1/auth/tg/{request_id}
 ```
 
 ## 🐳 Docker Support
@@ -206,7 +220,7 @@ reservia-api-clean/
 │   └── logger/                  # Structured logging
 ├── internal/                    # Private application code
 │   ├── domain/                  # Business entities
-│   │   ├── user/
+│   │   ├── employee/            # Employee domain with roles and permissions
 │   │   ├── restaurant/
 │   │   ├── reservation/
 │   │   ├── auth/

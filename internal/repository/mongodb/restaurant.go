@@ -3,6 +3,7 @@ package mongodb
 
 import (
 	"context"
+	"github.com/reservia/api/internal/model"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/reservia/api/internal/domain/restaurant"
 	"github.com/reservia/api/internal/repository"
 )
 
@@ -27,7 +27,7 @@ func NewRestaurantRepository(db *mongo.Database) repository.RestaurantRepository
 }
 
 // Create creates a new restaurant.
-func (r *RestaurantRepository) Create(ctx context.Context, rest *restaurant.Restaurant) error {
+func (r *RestaurantRepository) Create(ctx context.Context, rest *model.Restaurant) error {
 	rest.ID = primitive.NewObjectID()
 	rest.CreatedAt = time.Now()
 	rest.UpdatedAt = time.Now()
@@ -37,8 +37,8 @@ func (r *RestaurantRepository) Create(ctx context.Context, rest *restaurant.Rest
 }
 
 // GetByID retrieves a restaurant by ID.
-func (r *RestaurantRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*restaurant.Restaurant, error) {
-	var rest restaurant.Restaurant
+func (r *RestaurantRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*model.Restaurant, error) {
+	var rest model.Restaurant
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&rest)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -49,8 +49,21 @@ func (r *RestaurantRepository) GetByID(ctx context.Context, id primitive.ObjectI
 	return &rest, nil
 }
 
+// GetByURLName retrieves a restaurant by URL name.
+func (r *RestaurantRepository) GetByURLName(ctx context.Context, urlName string) (*model.Restaurant, error) {
+	var rest model.Restaurant
+	err := r.collection.FindOne(ctx, bson.M{"url_name": urlName}).Decode(&rest)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &rest, nil
+}
+
 // Update updates a restaurant.
-func (r *RestaurantRepository) Update(ctx context.Context, rest *restaurant.Restaurant) error {
+func (r *RestaurantRepository) Update(ctx context.Context, rest *model.Restaurant) error {
 	rest.UpdatedAt = time.Now()
 
 	_, err := r.collection.UpdateOne(
@@ -68,7 +81,7 @@ func (r *RestaurantRepository) Delete(ctx context.Context, id primitive.ObjectID
 }
 
 // List retrieves restaurants with filtering and pagination.
-func (r *RestaurantRepository) List(ctx context.Context, filters map[string]interface{}, limit, offset int) ([]*restaurant.Restaurant, error) {
+func (r *RestaurantRepository) List(ctx context.Context, filters map[string]interface{}, limit, offset int) ([]*model.Restaurant, error) {
 	// Build filter
 	filter := bson.M{}
 	for key, value := range filters {
@@ -86,9 +99,9 @@ func (r *RestaurantRepository) List(ctx context.Context, filters map[string]inte
 	}
 	defer cursor.Close(ctx)
 
-	var restaurants []*restaurant.Restaurant
+	var restaurants []*model.Restaurant
 	for cursor.Next(ctx) {
-		var rest restaurant.Restaurant
+		var rest model.Restaurant
 		if err := cursor.Decode(&rest); err != nil {
 			return nil, err
 		}
@@ -99,7 +112,7 @@ func (r *RestaurantRepository) List(ctx context.Context, filters map[string]inte
 }
 
 // GetByLocation retrieves restaurants by location.
-func (r *RestaurantRepository) GetByLocation(ctx context.Context, latitude, longitude, radius float64) ([]*restaurant.Restaurant, error) {
+func (r *RestaurantRepository) GetByLocation(ctx context.Context, latitude, longitude, radius float64) ([]*model.Restaurant, error) {
 	// For now, return all restaurants - in a real implementation, you'd use geospatial queries
 	return r.List(ctx, map[string]interface{}{}, 100, 0)
 }

@@ -1,0 +1,66 @@
+# Development Environment Configuration
+
+replicaCount: 1
+
+image:
+  repository: credo7/reservia-admin-api
+  pullPolicy: Always
+  tag: "latest"
+
+# Restart policy
+restartPolicy: Always
+
+# Service configuration (admin-api needs HTTP exposure)
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+# Environment Variables
+env:
+  - name: SERVER_PORT
+    value: "8000"
+  - name: DB_HOST
+    value: "mongo:27017"
+  - name: DB_NAME
+    value: "reservia"
+  - name: DB_USER
+    value: "user"
+  - name: DB_PASSWORD
+    value: "password"
+  - name: MONGODB_URI
+    value: "mongodb://user:password@mongo:27017/reservia?authSource=admin"
+  - name: JWT_SECRET
+    value: "Secret123!"
+  - name: LOG_LEVEL
+    value: "debug"
+  - name: RABBITMQ_URI
+    value: "amqp://user:password@rabbitmq:5672/"
+  - name: RABBITMQ_QUEUE_NAME
+    value: "email_tasks"
+
+# Resource limits for development
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Health checks
+healthcheck:
+  enabled: true
+  path: /health
+  port: 8000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+# Monitoring
+monitoring:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+    namespace: ""
+    interval: 30s
+    scrapeTimeout: 10s

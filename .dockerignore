@@ -1,0 +1,77 @@
+# Git
+.git
+.gitignore
+README.md
+
+# Build artifacts
+bin/
+build/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.test
+*.local
+
+# Docker
+Dockerfile*
+.dockerignore
+
+# CI/CD
+.github/
+
+# Documentation
+docs/
+*.md
+
+# Charts and Kubernetes
+charts/
+k8s/
+helm/
+
+# Logs
+logs/
+*.log
+
+# Dependencies (will be downloaded in Docker)
+vendor/
+
+# Test coverage
+coverage.html
+coverage.out
+
+# Temporary files
+tmp/
+temp/
