@@ -2,11 +2,12 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/go-chi/chi/v5"
+	"net/http"
+
+	chi "github.com/go-chi/chi/v5"
 	"github.com/reservia/api/internal/model"
 	"github.com/reservia/api/internal/service"
 	"github.com/reservia/api/pkg/logger"
-	"net/http"
 )
 
 type AuthHandler struct {

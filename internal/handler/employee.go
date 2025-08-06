@@ -3,15 +3,14 @@ package handler
 
 import (
 	"encoding/json"
+	"net/http"
+
+	chi "github.com/go-chi/chi/v5"
 	"github.com/reservia/api/internal/middleware"
 	"github.com/reservia/api/internal/model"
 	"github.com/reservia/api/internal/service"
-	"net/http"
-
-	"github.com/go-chi/chi/v5"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/reservia/api/pkg/logger"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // EmployeeHandler handles employee-related HTTP requests.

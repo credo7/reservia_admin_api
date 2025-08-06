@@ -4,11 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
-	"github.com/reservia/api/internal/model"
 	"math/big"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
+	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/reservia/api/internal/model"
 	"github.com/reservia/api/internal/repository"
 	"github.com/reservia/api/pkg/config"
 	"github.com/reservia/api/pkg/logger"
@@ -434,33 +434,33 @@ func (as *AuthService) RegisterEmployee(ctx context.Context, codeRequestID, code
 	if err == nil && existingEmployee != nil {
 		// Employee exists - add new restaurants to existing employee
 		as.logger.Info("Adding restaurants to existing employee", "email", empRegCode.Email, "employee_id", existingEmployee.ID)
-		
+
 		// Merge existing restaurants with new ones (avoid duplicates)
 		existingRestaurantMap := make(map[primitive.ObjectID]bool)
 		for _, existingRest := range existingEmployee.Restaurants {
 			existingRestaurantMap[existingRest.RestaurantID] = true
 		}
-		
+
 		// Add only new restaurants that don't already exist
 		for _, newRest := range newRestaurants {
 			if !existingRestaurantMap[newRest.RestaurantID] {
 				existingEmployee.Restaurants = append(existingEmployee.Restaurants, newRest)
 			}
 		}
-		
+
 		// Update employee with new restaurants
 		existingEmployee.UpdatedAt = time.Now()
 		if err := as.employeeRepo.Update(ctx, existingEmployee); err != nil {
 			as.logger.Error("Failed to update existing employee with new restaurants", "email", empRegCode.Email, "error", err)
 			return nil, fmt.Errorf("failed to update employee")
 		}
-		
+
 		targetEmployee = existingEmployee
 		as.logger.Info("Successfully added restaurants to existing employee", "employee_id", existingEmployee.ID, "email", empRegCode.Email)
 	} else {
 		// Employee doesn't exist - create new employee
 		as.logger.Info("Creating new employee from invitation", "email", empRegCode.Email)
-		
+
 		newEmployee := &model.Employee{
 			ID:          primitive.NewObjectID(),
 			FullName:    empRegCode.FullName,
@@ -474,7 +474,7 @@ func (as *AuthService) RegisterEmployee(ctx context.Context, codeRequestID, code
 			as.logger.Error("Failed to create employee during invitation registration", "email", empRegCode.Email, "error", err)
 			return nil, fmt.Errorf("failed to create employee")
 		}
-		
+
 		targetEmployee = newEmployee
 		as.logger.Info("Successfully created new employee", "employee_id", newEmployee.ID, "email", empRegCode.Email)
 	}
@@ -611,7 +611,7 @@ func (as *AuthService) generateInvitationCode() (string, error) {
 	// Characters to use for invitation code (alphanumeric)
 	chars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 	code := ""
-	
+
 	for i := 0; i < 16; i++ {
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
 		if err != nil {
@@ -619,7 +619,7 @@ func (as *AuthService) generateInvitationCode() (string, error) {
 		}
 		code += string(chars[n.Int64()])
 	}
-	
+
 	return code, nil
 }
 

@@ -329,6 +329,6 @@ func (es *EmployeeService) RemoveEmployeeFromRestaurants(ctx context.Context, em
 		"restaurants_removed", removedCount,
 		"owner_roles_kept", ownerRolesKept,
 		"remaining_restaurants", len(remainingRestaurants))
-	
+
 	return &updatedEmployee, nil
 }

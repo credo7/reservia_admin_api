@@ -43,7 +43,7 @@ func (rs *RestaurantService) CreateRestaurant(ctx context.Context, creator *mode
 
 	// 2. Generate URL name from restaurant name (matching Python slugification)
 	urlName := model.GenerateURLName(req.Name)
-	
+
 	// 3. Check if URL name is available and make it unique if needed
 	baseURLName := urlName
 	counter := 1
@@ -67,28 +67,28 @@ func (rs *RestaurantService) CreateRestaurant(ctx context.Context, creator *mode
 	defaultSettings := model.Settings{
 		AutoReservationAccepting:   true,
 		ReservationIntervalMinutes: 30,     // Python default: 30 minutes
-		ReservationReminderMinutes: 15,     // Python default: 15 minutes  
+		ReservationReminderMinutes: 15,     // Python default: 15 minutes
 		MinReservationDuration:     "1:00", // Python default: "1:00" (HH:MM format)
 		MaxReservationDuration:     "3:00", // Python default: "3:00" (HH:MM format)
 		MaxDaysInAdvance:           31,     // Python default: 31 days
 		// Legacy fields (for backward compatibility, will be deprecated)
-		MaxGuestsPerReservation:    8,      // Legacy default
-		DefaultReservationDuration: 120,    // Legacy default: 2 hours in minutes
+		MaxGuestsPerReservation:    8,   // Legacy default
+		DefaultReservationDuration: 120, // Legacy default: 2 hours in minutes
 	}
 
 	// 5. Create restaurant with minimal required data, server-generated values, and defaults
 	newRestaurant := &model.Restaurant{
 		Name:        req.Name,
-		URLName:     urlName,              // Auto-generated from name
+		URLName:     urlName, // Auto-generated from name
 		Address:     req.Address,
 		Phone:       req.Phone,
-		Email:       "",                   // Empty by default, can be set later
-		Description: "",                   // Empty by default, can be set later
-		IsActive:    false,                // Match Python: start disabled, requires manual activation
-		UTCOffset:   city.UTCOffset,       // Auto-resolved from city
-		Settings:    defaultSettings,      // Server-side defaults
-		Rooms:       []model.Room{},       // Empty by default, rooms added later
-		SubURLs:     []model.SubURL{},     // Empty by default
+		Email:       "",               // Empty by default, can be set later
+		Description: "",               // Empty by default, can be set later
+		IsActive:    false,            // Match Python: start disabled, requires manual activation
+		UTCOffset:   city.UTCOffset,   // Auto-resolved from city
+		Settings:    defaultSettings,  // Server-side defaults
+		Rooms:       []model.Room{},   // Empty by default, rooms added later
+		SubURLs:     []model.SubURL{}, // Empty by default
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
@@ -109,13 +109,13 @@ func (rs *RestaurantService) CreateRestaurant(ctx context.Context, creator *mode
 
 	// 8. Update the employee with their new restaurant ownership
 	if err := rs.employeeRepo.Update(ctx, &creatorCopy); err != nil {
-		rs.logger.Error("Failed to establish restaurant ownership", 
+		rs.logger.Error("Failed to establish restaurant ownership",
 			"error", err, "employee_id", creator.ID, "restaurant_id", newRestaurant.ID)
 		// This is critical - if we can't establish ownership, the restaurant is unusable
 		return nil, fmt.Errorf("failed to establish restaurant ownership: %w", err)
 	}
 
-	rs.logger.Info("Restaurant created successfully with owner assignment", 
+	rs.logger.Info("Restaurant created successfully with owner assignment",
 		"restaurant_id", newRestaurant.ID.Hex(),
 		"owner_employee_id", creator.ID.Hex(),
 		"restaurant_name", newRestaurant.Name,
@@ -274,7 +274,7 @@ func (rs *RestaurantService) GetRestaurantByURLNameOrID(ctx context.Context, url
 	if id, err := primitive.ObjectIDFromHex(urlNameOrID); err == nil {
 		return rs.GetRestaurantByID(ctx, id)
 	}
-	
+
 	// Otherwise treat as URL name
 	rest, err := rs.restaurantRepo.GetByURLName(ctx, urlNameOrID)
 	if err != nil {
@@ -292,7 +292,7 @@ func (rs *RestaurantService) CheckURLNameAvailability(ctx context.Context, urlNa
 	if err != nil {
 		return nil, fmt.Errorf("failed to check URL name availability: %w", err)
 	}
-	
+
 	return &model.UrlNameAvailabilityResponse{
 		IsAvailable: rest == nil,
 	}, nil

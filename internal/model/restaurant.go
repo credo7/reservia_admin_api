@@ -11,38 +11,38 @@ import (
 
 // Restaurant represents a restaurant in the system.
 type Restaurant struct {
-	ID                           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Name                         string             `json:"name" bson:"name"`
-	URLName                      string             `json:"urlName" bson:"url_name"`
-	City                         string             `json:"city" bson:"city"`
-	Address                      string             `json:"address" bson:"address"`
-	Phone                        string             `json:"phone" bson:"phone"`
-	Email                        string             `json:"email" bson:"email"`
-	Description                  string             `json:"description" bson:"description"`
-	IsActive                     bool               `json:"isActive" bson:"is_active"`
-	UTCOffset                    int                `json:"utcOffset" bson:"utc_offset"`
-	IsDefaultScheduleForAllRooms bool               `json:"isDefaultScheduleForAllRooms" bson:"is_default_schedule_for_all_rooms"`
-	IsSpecialScheduleForAllRooms bool               `json:"isSpecialScheduleForAllRooms" bson:"is_special_schedule_for_all_rooms"`
-	IsClosedForAllRooms          bool               `json:"isClosedForAllRooms" bson:"is_closed_for_all_rooms"`
+	ID                           primitive.ObjectID  `json:"id" bson:"_id,omitempty"`
+	Name                         string              `json:"name" bson:"name"`
+	URLName                      string              `json:"urlName" bson:"url_name"`
+	City                         string              `json:"city" bson:"city"`
+	Address                      string              `json:"address" bson:"address"`
+	Phone                        string              `json:"phone" bson:"phone"`
+	Email                        string              `json:"email" bson:"email"`
+	Description                  string              `json:"description" bson:"description"`
+	IsActive                     bool                `json:"isActive" bson:"is_active"`
+	UTCOffset                    int                 `json:"utcOffset" bson:"utc_offset"`
+	IsDefaultScheduleForAllRooms bool                `json:"isDefaultScheduleForAllRooms" bson:"is_default_schedule_for_all_rooms"`
+	IsSpecialScheduleForAllRooms bool                `json:"isSpecialScheduleForAllRooms" bson:"is_special_schedule_for_all_rooms"`
+	IsClosedForAllRooms          bool                `json:"isClosedForAllRooms" bson:"is_closed_for_all_rooms"`
 	DefaultRoomID                *primitive.ObjectID `json:"defaultRoomId,omitempty" bson:"default_room_id,omitempty"`
-	Settings                     Settings           `json:"settings" bson:"settings"`
-	Rooms                        []Room             `json:"rooms" bson:"rooms"`
-	SubURLs                      []SubURL           `json:"subUrls" bson:"sub_urls"`
-	CreatedAt                    time.Time          `json:"createdAt" bson:"created_at"`
-	UpdatedAt                    time.Time          `json:"updatedAt" bson:"updated_at"`
+	Settings                     Settings            `json:"settings" bson:"settings"`
+	Rooms                        []Room              `json:"rooms" bson:"rooms"`
+	SubURLs                      []SubURL            `json:"subUrls" bson:"sub_urls"`
+	CreatedAt                    time.Time           `json:"createdAt" bson:"created_at"`
+	UpdatedAt                    time.Time           `json:"updatedAt" bson:"updated_at"`
 }
 
 // Settings contains restaurant configuration (matches Python RestaurantSettingsSchema).
 type Settings struct {
-	AutoReservationAccepting     bool   `json:"autoReservationAccepting" bson:"auto_reservation_accepting"`
-	ReservationIntervalMinutes   int    `json:"reservationIntervalMinutes" bson:"reservation_interval_minutes"`
-	ReservationReminderMinutes   int    `json:"reservationReminderMinutes" bson:"reservation_reminder_minutes"`
-	MinReservationDuration       string `json:"minReservationDuration" bson:"min_reservation_duration"`         // HH:MM format
-	MaxReservationDuration       string `json:"maxReservationDuration" bson:"max_reservation_duration"`         // HH:MM format
-	MaxDaysInAdvance             int    `json:"maxDaysInAdvance" bson:"max_days_in_advance"`
+	AutoReservationAccepting   bool   `json:"autoReservationAccepting" bson:"auto_reservation_accepting"`
+	ReservationIntervalMinutes int    `json:"reservationIntervalMinutes" bson:"reservation_interval_minutes"`
+	ReservationReminderMinutes int    `json:"reservationReminderMinutes" bson:"reservation_reminder_minutes"`
+	MinReservationDuration     string `json:"minReservationDuration" bson:"min_reservation_duration"` // HH:MM format
+	MaxReservationDuration     string `json:"maxReservationDuration" bson:"max_reservation_duration"` // HH:MM format
+	MaxDaysInAdvance           int    `json:"maxDaysInAdvance" bson:"max_days_in_advance"`
 	// Legacy fields for backward compatibility (these will be deprecated)
-	MaxGuestsPerReservation      int    `json:"maxGuestsPerReservation,omitempty" bson:"max_guests_per_reservation,omitempty"`
-	DefaultReservationDuration   int    `json:"defaultReservationDuration,omitempty" bson:"default_reservation_duration,omitempty"` // minutes
+	MaxGuestsPerReservation    int `json:"maxGuestsPerReservation,omitempty" bson:"max_guests_per_reservation,omitempty"`
+	DefaultReservationDuration int `json:"defaultReservationDuration,omitempty" bson:"default_reservation_duration,omitempty"` // minutes
 }
 
 // Room represents a room within a restaurant.
@@ -253,7 +253,7 @@ type RestaurantMiniResponse struct {
 }
 
 // ToMiniResponse converts a Restaurant to RestaurantMiniResponse.
-func (r *Restaurant) ToMiniResponse() *RestaurantMiniResponse {  
+func (r *Restaurant) ToMiniResponse() *RestaurantMiniResponse {
 	return &RestaurantMiniResponse{
 		ID:       r.ID,
 		Name:     r.Name,
@@ -354,35 +354,35 @@ const (
 type ElementCode string
 
 const (
-	ElementCodeWindow               ElementCode = "WINDOW"
-	ElementCodeWall                 ElementCode = "WALL"
-	ElementCodeRoundedWall          ElementCode = "ROUNDED_WALL"
-	ElementCodePolygonalWall        ElementCode = "POLYGONAL_WALL"
-	ElementCodeChair                ElementCode = "CHAIR"
-	ElementCodeArmchair1            ElementCode = "ARMCHAIR_1"
-	ElementCodeArmchair2            ElementCode = "ARMCHAIR_2"
-	ElementCodeSquareTable          ElementCode = "SQUARE_TABLE"
-	ElementCodeRoundedTable         ElementCode = "ROUNDED_TABLE"
-	ElementCodeText                 ElementCode = "TEXT"
-	ElementCodeArrow                ElementCode = "ARROW"
-	ElementCodeChairSlot            ElementCode = "CHAIR_SLOT"
-	ElementCodeActiveChairSlot      ElementCode = "ACTIVE_CHAIR_SLOT"
-	ElementCodeSource               ElementCode = "SOURCE"
-	ElementCodeSofaLeftArmLong      ElementCode = "SOFA_LEFT_ARM_LONG"
-	ElementCodeSofaLeftArmShort     ElementCode = "SOFA_LEFT_ARM_SHORT"
-	ElementCodeSofaLeftNoArm        ElementCode = "SOFA_LEFT_NO_ARM"
-	ElementCodeSofaSemiLeftArmLong  ElementCode = "SOFA_SEMI_LEFT_ARM_LONG"
-	ElementCodeSofaSemiLeftArmShort ElementCode = "SOFA_SEMI_LEFT_ARM_SHORT"
-	ElementCodeSofaSemiLeftNoArm    ElementCode = "SOFA_SEMI_LEFT_NO_ARM"
-	ElementCodeSofaRightArmLong     ElementCode = "SOFA_RIGHT_ARM_LONG"
-	ElementCodeSofaRightArmShort    ElementCode = "SOFA_RIGHT_ARM_SHORT"
-	ElementCodeSofaRightNoArm       ElementCode = "SOFA_RIGHT_NO_ARM"
-	ElementCodeSofaSemiRightArmLong ElementCode = "SOFA_SEMI_RIGHT_ARM_LONG"
+	ElementCodeWindow                ElementCode = "WINDOW"
+	ElementCodeWall                  ElementCode = "WALL"
+	ElementCodeRoundedWall           ElementCode = "ROUNDED_WALL"
+	ElementCodePolygonalWall         ElementCode = "POLYGONAL_WALL"
+	ElementCodeChair                 ElementCode = "CHAIR"
+	ElementCodeArmchair1             ElementCode = "ARMCHAIR_1"
+	ElementCodeArmchair2             ElementCode = "ARMCHAIR_2"
+	ElementCodeSquareTable           ElementCode = "SQUARE_TABLE"
+	ElementCodeRoundedTable          ElementCode = "ROUNDED_TABLE"
+	ElementCodeText                  ElementCode = "TEXT"
+	ElementCodeArrow                 ElementCode = "ARROW"
+	ElementCodeChairSlot             ElementCode = "CHAIR_SLOT"
+	ElementCodeActiveChairSlot       ElementCode = "ACTIVE_CHAIR_SLOT"
+	ElementCodeSource                ElementCode = "SOURCE"
+	ElementCodeSofaLeftArmLong       ElementCode = "SOFA_LEFT_ARM_LONG"
+	ElementCodeSofaLeftArmShort      ElementCode = "SOFA_LEFT_ARM_SHORT"
+	ElementCodeSofaLeftNoArm         ElementCode = "SOFA_LEFT_NO_ARM"
+	ElementCodeSofaSemiLeftArmLong   ElementCode = "SOFA_SEMI_LEFT_ARM_LONG"
+	ElementCodeSofaSemiLeftArmShort  ElementCode = "SOFA_SEMI_LEFT_ARM_SHORT"
+	ElementCodeSofaSemiLeftNoArm     ElementCode = "SOFA_SEMI_LEFT_NO_ARM"
+	ElementCodeSofaRightArmLong      ElementCode = "SOFA_RIGHT_ARM_LONG"
+	ElementCodeSofaRightArmShort     ElementCode = "SOFA_RIGHT_ARM_SHORT"
+	ElementCodeSofaRightNoArm        ElementCode = "SOFA_RIGHT_NO_ARM"
+	ElementCodeSofaSemiRightArmLong  ElementCode = "SOFA_SEMI_RIGHT_ARM_LONG"
 	ElementCodeSofaSemiRightArmShort ElementCode = "SOFA_SEMI_RIGHT_ARM_SHORT"
-	ElementCodeSofaSemiRightNoArm   ElementCode = "SOFA_SEMI_RIGHT_NO_ARM"
-	ElementCodeSofaRightConnector   ElementCode = "SOFA_RIGHT_CONNECTOR"
-	ElementCodeSofaMiddleConnector  ElementCode = "SOFA_MIDDLE_CONNECTOR"
-	ElementCodeSofaLeftConnector    ElementCode = "SOFA_LEFT_CONNECTOR"
+	ElementCodeSofaSemiRightNoArm    ElementCode = "SOFA_SEMI_RIGHT_NO_ARM"
+	ElementCodeSofaRightConnector    ElementCode = "SOFA_RIGHT_CONNECTOR"
+	ElementCodeSofaMiddleConnector   ElementCode = "SOFA_MIDDLE_CONNECTOR"
+	ElementCodeSofaLeftConnector     ElementCode = "SOFA_LEFT_CONNECTOR"
 )
 
 // Element represents a table, seat, or other UI element within a room.
@@ -479,20 +479,20 @@ func (room *Room) GetTablesFromElements() []Element {
 func GenerateURLName(name string) string {
 	// Convert to lowercase
 	urlName := strings.ToLower(name)
-	
+
 	// Replace spaces and special characters with hyphens
 	reg := regexp.MustCompile(`[^a-z0-9]+`)
 	urlName = reg.ReplaceAllString(urlName, "-")
-	
+
 	// Remove leading and trailing hyphens
 	urlName = strings.Trim(urlName, "-")
-	
+
 	// Limit length to 50 characters
 	if len(urlName) > 50 {
 		urlName = urlName[:50]
 		// Remove trailing hyphen if we cut in the middle of a word
 		urlName = strings.TrimRight(urlName, "-")
 	}
-	
+
 	return urlName
 }

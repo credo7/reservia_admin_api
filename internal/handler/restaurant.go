@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/reservia/api/pkg/logger"
@@ -255,7 +255,7 @@ func (h *RestaurantHandler) GetRestaurantRoom(w http.ResponseWriter, r *http.Req
 		h.writeError(w, http.StatusBadRequest, "Invalid room ID")
 		return
 	}
-	
+
 	room, err := h.restaurantService.GetRestaurantRoom(r.Context(), id, roomID)
 	if err != nil {
 		h.logger.Error("Failed to get restaurant room", "error", err)
@@ -597,7 +597,7 @@ func (h *RestaurantHandler) DeleteSubURL(w http.ResponseWriter, r *http.Request)
 		h.writeError(w, http.StatusBadRequest, "Sub-URL ID is required")
 		return
 	}
-	
+
 	subURLID, err := primitive.ObjectIDFromHex(subURLIDStr)
 	if err != nil {
 		h.writeError(w, http.StatusBadRequest, "Invalid sub-URL ID")

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/reservia/api/pkg/logger"
@@ -765,7 +765,7 @@ func (h *RoomHandler) authenticateRequest(r *http.Request) (primitive.ObjectID, 
 		return primitive.NilObjectID, fmt.Errorf("token is required")
 	}
 
-	employeeID, err := h.authService.ValidateToken(token) 
+	employeeID, err := h.authService.ValidateToken(token)
 	if err != nil {
 		return primitive.NilObjectID, fmt.Errorf("invalid or expired token")
 	}

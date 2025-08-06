@@ -2,11 +2,11 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/reservia/api/internal/model"
-	"github.com/reservia/api/internal/service"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
+	"github.com/reservia/api/internal/model"
+	"github.com/reservia/api/internal/service"
 	"github.com/reservia/api/pkg/logger"
 )
 

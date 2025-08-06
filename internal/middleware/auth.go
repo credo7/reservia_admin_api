@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	"github.com/reservia/api/internal/model"
 	"github.com/reservia/api/internal/service"
 	"github.com/reservia/api/pkg/logger"
@@ -105,8 +105,8 @@ func (am *AuthMiddleware) RequirePermission(permission model.Permission) func(ht
 
 			// Check if employee has the required permission
 			if !employee.HasPermission(permission) {
-				am.logger.Warn("Employee lacks required permission", 
-					"employee_id", employee.ID, 
+				am.logger.Warn("Employee lacks required permission",
+					"employee_id", employee.ID,
 					"permission", permission,
 					"path", r.URL.Path)
 				am.writeError(w, http.StatusForbidden, "Insufficient permissions")
@@ -169,8 +169,8 @@ func (am *AuthMiddleware) RequireRestaurantPermission(permission model.Permissio
 			}
 
 			if !hasAccess {
-				am.logger.Warn("Employee attempted to access restaurants without permission", 
-					"employee_id", employee.ID, 
+				am.logger.Warn("Employee attempted to access restaurants without permission",
+					"employee_id", employee.ID,
 					"permission", permission,
 					"restaurants", restaurantIDs,
 					"path", r.URL.Path)
@@ -231,15 +231,15 @@ func ExtractRestaurantIDsFromBody(bodyField string) func(*http.Request) []primit
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			return nil
 		}
-		
+
 		// Reset body for subsequent reads
 		r.Body = io.NopCloser(bytes.NewReader([]byte{}))
-		
+
 		idsInterface, ok := body[bodyField]
 		if !ok {
 			return nil
 		}
-		
+
 		var ids []primitive.ObjectID
 		switch v := idsInterface.(type) {
 		case []interface{}:
@@ -255,7 +255,7 @@ func ExtractRestaurantIDsFromBody(bodyField string) func(*http.Request) []primit
 				ids = append(ids, id)
 			}
 		}
-		
+
 		return ids
 	}
 }

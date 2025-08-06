@@ -83,24 +83,24 @@ type Reservation struct {
 // CreateReservationRequest represents the request to create a reservation.
 type CreateReservationRequest struct {
 	TableID    primitive.ObjectID `json:"table_id" validate:"required"`
-	FullName   string    `json:"full_name" validate:"required,min=2,max=100"`
-	Email      string    `json:"email" validate:"required,email"`
-	Phone      string    `json:"phone" validate:"required"`
-	GuestCount int       `json:"guest_count" validate:"required,min=1,max=20"`
-	StartAt    time.Time `json:"start_at" validate:"required"`
-	Duration   string    `json:"duration" validate:"required"` // Format: "2:30" (2 hours 30 minutes)
-	UserNotes  string    `json:"user_notes" validate:"max=500"`
+	FullName   string             `json:"full_name" validate:"required,min=2,max=100"`
+	Email      string             `json:"email" validate:"required,email"`
+	Phone      string             `json:"phone" validate:"required"`
+	GuestCount int                `json:"guest_count" validate:"required,min=1,max=20"`
+	StartAt    time.Time          `json:"start_at" validate:"required"`
+	Duration   string             `json:"duration" validate:"required"` // Format: "2:30" (2 hours 30 minutes)
+	UserNotes  string             `json:"user_notes" validate:"max=500"`
 }
 
 // UpdateReservationRequest represents the request to update a reservation.
 type UpdateReservationRequest struct {
-	StartAt            *time.Time `json:"start_at,omitempty"`
-	EndAt              *time.Time `json:"end_at,omitempty"`
-	Duration           *string    `json:"duration,omitempty"`
+	StartAt            *time.Time          `json:"start_at,omitempty"`
+	EndAt              *time.Time          `json:"end_at,omitempty"`
+	Duration           *string             `json:"duration,omitempty"`
 	TableID            *primitive.ObjectID `json:"table_id,omitempty"`
-	GuestCount         *int       `json:"guest_count,omitempty" validate:"omitempty,min=1,max=20"`
-	AdminNotes         *string    `json:"admin_notes,omitempty"`
-	CancellationReason *string    `json:"cancellation_reason,omitempty"`
+	GuestCount         *int                `json:"guest_count,omitempty" validate:"omitempty,min=1,max=20"`
+	AdminNotes         *string             `json:"admin_notes,omitempty"`
+	CancellationReason *string             `json:"cancellation_reason,omitempty"`
 }
 
 // UpdateReservationStatusRequest represents the request to update reservation status.
@@ -216,7 +216,7 @@ type ReservationResponse struct {
 	Code         string              `json:"code"`
 	RestaurantID primitive.ObjectID  `json:"restaurantId"`
 	RoomID       primitive.ObjectID  `json:"room_id"`
-	TableID      primitive.ObjectID  `json:"table_id"` 
+	TableID      primitive.ObjectID  `json:"table_id"`
 	UserID       *primitive.ObjectID `json:"user_id,omitempty"`
 	FullName     string              `json:"full_name"`
 	Email        string              `json:"email"`

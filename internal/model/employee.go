@@ -156,7 +156,7 @@ func (e *Employee) FilterRestaurantsByAccess(requesterRestaurantIDs []primitive.
 	for _, id := range requesterRestaurantIDs {
 		requesterRestaurants[id] = true
 	}
-	
+
 	// Filter restaurants to only include those the requester has access to
 	var filteredRestaurants []EmployeeRestaurant
 	for _, restaurant := range e.Restaurants {
@@ -164,7 +164,7 @@ func (e *Employee) FilterRestaurantsByAccess(requesterRestaurantIDs []primitive.
 			filteredRestaurants = append(filteredRestaurants, restaurant)
 		}
 	}
-	
+
 	// Create a copy of the employee with filtered restaurants
 	filteredEmployee := *e // Copy the struct
 	filteredEmployee.Restaurants = filteredRestaurants

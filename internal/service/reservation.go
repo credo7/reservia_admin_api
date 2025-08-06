@@ -67,31 +67,31 @@ func (rs *ReservationService) CreateReservationByEmployee(ctx context.Context, r
 
 	// Create reservation
 	reservation := &model.Reservation{
-		Code:                code,
-		RestaurantID:        restaurantID,
-		RoomID:              roomID,
-		TableID:             req.TableID,
-		FullName:            req.FullName,
-		Email:               req.Email,
-		Phone:               req.Phone,
-		GuestCount:          req.GuestCount,
-		UserNotes:           req.UserNotes,
-		Status:              model.StatusConfirmed, // Admin reservations are automatically confirmed
-		AuthorizeMethod:     model.AuthorizeMethodAdmin,
-		IsUsedForAuth:       false,
-		StartAt:             req.StartAt,
-		EndAt:               endAt,
-		InitialEndAt:        endAt,
-		WorkingDayDate:      time.Date(req.StartAt.Year(), req.StartAt.Month(), req.StartAt.Day(), 0, 0, 0, 0, req.StartAt.Location()),
-		CreatedAt:           time.Now(),
-		UpdatedAt:           time.Now(),
-		AuthorizedAt:        &time.Time{},
-		ConfirmedAt:         &time.Time{},
-		AdminNotes:          fmt.Sprintf("Created by employee %s", employeeID.Hex()),
-		IsSeen:              true, // Admin-created reservations are marked as seen
-		TgUsername:          "",
-		ExternalBookingID:   "",
-		CancellationReason:  "",
+		Code:               code,
+		RestaurantID:       restaurantID,
+		RoomID:             roomID,
+		TableID:            req.TableID,
+		FullName:           req.FullName,
+		Email:              req.Email,
+		Phone:              req.Phone,
+		GuestCount:         req.GuestCount,
+		UserNotes:          req.UserNotes,
+		Status:             model.StatusConfirmed, // Admin reservations are automatically confirmed
+		AuthorizeMethod:    model.AuthorizeMethodAdmin,
+		IsUsedForAuth:      false,
+		StartAt:            req.StartAt,
+		EndAt:              endAt,
+		InitialEndAt:       endAt,
+		WorkingDayDate:     time.Date(req.StartAt.Year(), req.StartAt.Month(), req.StartAt.Day(), 0, 0, 0, 0, req.StartAt.Location()),
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
+		AuthorizedAt:       &time.Time{},
+		ConfirmedAt:        &time.Time{},
+		AdminNotes:         fmt.Sprintf("Created by employee %s", employeeID.Hex()),
+		IsSeen:             true, // Admin-created reservations are marked as seen
+		TgUsername:         "",
+		ExternalBookingID:  "",
+		CancellationReason: "",
 	}
 
 	now := time.Now()
@@ -155,11 +155,11 @@ func (rs *ReservationService) GetReservationsByRoom(ctx context.Context, restaur
 	// Apply pagination
 	start := offset
 	end := offset + limit
-	
+
 	if start > len(roomReservations) {
 		return []*model.Reservation{}, nil
 	}
-	
+
 	if end > len(roomReservations) {
 		end = len(roomReservations)
 	}

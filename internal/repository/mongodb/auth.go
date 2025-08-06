@@ -165,7 +165,7 @@ func (r *AuthRepository) CreateEmployeeRegistrationCode(ctx context.Context, cod
 	code.ID = primitive.NewObjectID()
 	code.CreatedAt = time.Now()
 	code.UpdatedAt = time.Now()
-	
+
 	_, err := r.registerEmployeeCodes.InsertOne(ctx, code)
 	return err
 }
@@ -251,7 +251,7 @@ func (r *AuthRepository) CreateTelegramVerificationCode(ctx context.Context, cod
 	code.ID = primitive.NewObjectID()
 	code.CreatedAt = time.Now()
 	code.UpdatedAt = time.Now()
-	
+
 	_, err := r.tgVerificationCodes.InsertOne(ctx, code)
 	return err
 }
