@@ -18,7 +18,7 @@ service:
 
 # Environment Variables
 env:
-  - name: SERVER_PORT
+  - name: PORT
     value: "8000"
   - name: DB_HOST
     value: "mongo:27017"
