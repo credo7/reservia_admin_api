@@ -39,7 +39,7 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/bin/reservia-admin-api /reservia-admin-api
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8000
 
 # Set user to non-root
 USER 65534:65534
