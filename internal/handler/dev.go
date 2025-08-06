@@ -21,5 +21,9 @@ func NewDevHandler() *DevHandler {
 func (h *DevHandler) Ping(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "OK!"}`))
+	if _, err := w.Write([]byte(`{"message": "OK!"}`)); err != nil {
+		// If write fails, there's not much we can do since headers are already written
+		// The connection is likely broken at this point
+		return
+	}
 }
