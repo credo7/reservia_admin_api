@@ -116,7 +116,11 @@ func (s *Server) setupRouter() {
 	// Middleware
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.RealIP)
-	r.Use(chiMiddleware.Logger)
+	
+	// Custom logging middleware that excludes health checks
+	loggingMiddleware := middleware.NewLoggingMiddleware(s.logger)
+	r.Use(loggingMiddleware.Handler)
+	
 	r.Use(chiMiddleware.Recoverer)
 	r.Use(chiMiddleware.Timeout(60 * time.Second))
 
