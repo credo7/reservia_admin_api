@@ -28,7 +28,7 @@ env:
     value: "user"
   - name: DB_PASSWORD
     value: "password"
-  - name: MONGODB_URI
+  - name: DATABASE_URL
     value: "mongodb://user:password@mongo:27017/reservia?authSource=admin"
   - name: JWT_SECRET
     value: "Secret123!"
