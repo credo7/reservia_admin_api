@@ -147,6 +147,11 @@ func (s *Server) setupRouter() {
 
 	// API routes
 	r.Route("/api/admin", func(r chi.Router) {
+		// Swagger documentation under /api/admin/docs
+		r.Get("/docs/*", httpSwagger.Handler(
+			httpSwagger.URL("/api/admin/docs/doc.json"),
+		))
+		
 		// Development endpoints
 		r.Route("/dev", func(r chi.Router) {
 			r.Get("/ping", s.devHandler.Ping)
