@@ -8,7 +8,6 @@ import (
 	"github.com/reservia/api/internal/model"
 	"github.com/reservia/api/internal/service"
 	"net/http"
-	"strconv"
 	"strings"
 
 	chi "github.com/go-chi/chi/v5"
@@ -43,7 +42,7 @@ func NewRestaurantHandler(restaurantService *service.RestaurantService, reservat
 //	@Accept			json
 //	@Produce		json
 //	@Param			restaurant	body		model.CreateRestaurantRequest	true	"Restaurant creation data"
-//	@Success		201			{object}	model.RestaurantResponse		"Restaurant created successfully"
+//	@Success		201			{object}	model.RestaurantSummary		"Restaurant created successfully"
 //	@Failure		400			{object}	map[string]string					"Invalid request body"
 //	@Failure		401			{object}	map[string]string					"Authentication required"
 //	@Failure		500			{object}	map[string]string					"Internal server error"
@@ -80,7 +79,7 @@ func (h *RestaurantHandler) CreateRestaurant(w http.ResponseWriter, r *http.Requ
 		"restaurant_id", createdRestaurant.ID.Hex(),
 		"creator_id", creator.ID.Hex(),
 		"restaurant_name", createdRestaurant.Name)
-	h.writeJSON(w, http.StatusCreated, createdRestaurant.ToResponse())
+	h.writeJSON(w, http.StatusCreated, createdRestaurant.ToSummary())
 }
 
 // GetRestaurant handles GET /restaurants/{id}.
@@ -91,7 +90,7 @@ func (h *RestaurantHandler) CreateRestaurant(w http.ResponseWriter, r *http.Requ
 //	@Accept			json
 //	@Produce		json
 //	@Param			id	path		string						true	"Restaurant ID"
-//	@Success		200	{object}	model.RestaurantResponse	"Restaurant found"
+//	@Success		200	{object}	model.Restaurant	"Restaurant found"
 //	@Failure		400	{object}	map[string]string			"Invalid restaurant ID"
 //	@Failure		404	{object}	map[string]string			"Restaurant not found"
 //	@Router			/restaurants/{id} [get]
@@ -110,7 +109,7 @@ func (h *RestaurantHandler) GetRestaurant(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	h.writeJSON(w, http.StatusOK, rest.ToResponse())
+	h.writeJSON(w, http.StatusOK, rest)
 }
 
 // UpdateRestaurant handles PUT /restaurants/{id}.
@@ -135,7 +134,7 @@ func (h *RestaurantHandler) UpdateRestaurant(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	h.writeJSON(w, http.StatusOK, updatedRestaurant.ToResponse())
+	h.writeJSON(w, http.StatusOK, updatedRestaurant)
 }
 
 // DeleteRestaurant handles DELETE /restaurants/{id}.
@@ -158,64 +157,49 @@ func (h *RestaurantHandler) DeleteRestaurant(w http.ResponseWriter, r *http.Requ
 
 // ListRestaurants handles GET /restaurants.
 //
-//	@Summary		List restaurants
-//	@Description	Retrieve a list of restaurants with filtering and pagination
+//	@Summary		List associated restaurants
+//	@Description	Retrieve all restaurants associated with the authenticated employee
 //	@Tags			restaurants
 //	@Accept			json
 //	@Produce		json
-//	@Param			limit		query		int						false	"Number of restaurants to return (default: 10)"
-//	@Param			offset		query		int						false	"Number of restaurants to skip (default: 0)"
-//	@Param			is_active	query		bool					false	"Filter by active status"
-//	@Success		200			{object}	map[string]interface{}	"List of restaurants with pagination info"
-//	@Failure		500			{object}	map[string]string		"Internal server error"
+//	@Success		200			{array}		model.RestaurantSummary	"List of associated restaurants"
+//	@Failure		401			{object}	map[string]string			"Unauthorized - authentication required"
+//	@Failure		500			{object}	map[string]string			"Internal server error"
 //	@Router			/restaurants [get]
+//	@Security		BearerAuth
 func (h *RestaurantHandler) ListRestaurants(w http.ResponseWriter, r *http.Request) {
-	// Parse query parameters
-	limitStr := r.URL.Query().Get("limit")
-	offsetStr := r.URL.Query().Get("offset")
-	isActive := r.URL.Query().Get("is_active")
-
-	limit := 10 // default
-	if limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
-			limit = parsedLimit
-		}
+	// Get authenticated employee from context
+	employee, ok := middleware.GetEmployeeFromContext(r.Context())
+	if !ok {
+		h.logger.Error("Employee not found in context during ListRestaurants")
+		h.writeError(w, http.StatusUnauthorized, "Authentication required")
+		return
 	}
 
-	offset := 0 // default
-	if offsetStr != "" {
-		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
-			offset = parsedOffset
-		}
+	// Get employee's restaurant IDs
+	restaurantIDs := employee.GetRestaurantIDs()
+	if len(restaurantIDs) == 0 {
+		// Return empty array if employee has no restaurants
+		h.writeJSON(w, http.StatusOK, []*model.RestaurantSummary{})
+		return
 	}
 
-	// Build filters
-	filters := make(map[string]interface{})
-	if isActive != "" {
-		if active, err := strconv.ParseBool(isActive); err == nil {
-			filters["is_active"] = active
-		}
-	}
-
-	restaurants, err := h.restaurantService.ListRestaurants(r.Context(), filters, limit, offset)
+	// Get all restaurants associated with this employee
+	restaurants, err := h.restaurantService.GetRestaurantsByIDs(r.Context(), restaurantIDs)
 	if err != nil {
-		h.logger.Error("Failed to list restaurants", "error", err)
+		h.logger.Error("Failed to get associated restaurants", "error", err, "employee_id", employee.ID)
 		h.writeError(w, http.StatusInternalServerError, "Failed to list restaurants")
 		return
 	}
 
-	// Convert to response format
-	responses := make([]*model.RestaurantResponse, len(restaurants))
+	// Convert to summary format (matching Python RestaurantMiniSchema)
+	summaries := make([]*model.RestaurantSummary, len(restaurants))
 	for i, rest := range restaurants {
-		responses[i] = rest.ToResponse()
+		summaries[i] = rest.ToSummary()
 	}
 
-	h.writeJSON(w, http.StatusOK, map[string]interface{}{
-		"restaurants": responses,
-		"limit":       limit,
-		"offset":      offset,
-		"count":       len(responses),
-	})
+	h.logger.Info("Listed associated restaurants", "employee_id", employee.ID, "count", len(summaries))
+	h.writeJSON(w, http.StatusOK, summaries)
 }
 
 // GetRestaurantRooms handles GET /restaurants/{id}/rooms.
@@ -312,7 +296,7 @@ func (h *RestaurantHandler) CheckURLNameAvailability(w http.ResponseWriter, r *h
 //	@Accept			json
 //	@Produce		json
 //	@Param			urlNameOrRestId	path		string						true	"Restaurant URL name or ID"
-//	@Success		200				{object}	model.RestaurantResponse	"Restaurant found"
+//	@Success		200				{object}	model.Restaurant	"Restaurant found"
 //	@Failure		404				{object}	map[string]string		"Restaurant not found"
 //	@Failure		500				{object}	map[string]string		"Internal server error"
 //	@Router			/restaurants/{urlNameOrRestId} [get]
@@ -339,7 +323,7 @@ func (h *RestaurantHandler) GetRestaurantByURLNameOrID(w http.ResponseWriter, r 
 		return
 	}
 
-	h.writeJSON(w, http.StatusOK, restaurant.ToResponse())
+	h.writeJSON(w, http.StatusOK, restaurant)
 }
 
 // UpdateRestaurantSettings handles PATCH /restaurants/{restaurantId}/settings.
@@ -351,7 +335,7 @@ func (h *RestaurantHandler) GetRestaurantByURLNameOrID(w http.ResponseWriter, r 
 //	@Produce		json
 //	@Param			restaurantId	path		string								true	"Restaurant ID"
 //	@Param			settings		body		model.UpdateRestaurantSettingsRequest	true	"Restaurant settings update data"
-//	@Success		200				{object}	model.RestaurantResponse				"Restaurant settings updated successfully"
+//	@Success		200				{object}	model.Restaurant				"Restaurant settings updated successfully"
 //	@Failure		400				{object}	map[string]string					"Invalid request"
 //	@Failure		404				{object}	map[string]string					"Restaurant not found"
 //	@Failure		500				{object}	map[string]string					"Internal server error"
@@ -386,7 +370,7 @@ func (h *RestaurantHandler) UpdateRestaurantSettings(w http.ResponseWriter, r *h
 		return
 	}
 
-	h.writeJSON(w, http.StatusOK, updatedRestaurant.ToResponse())
+	h.writeJSON(w, http.StatusOK, updatedRestaurant)
 }
 
 // EnableRestaurant handles POST /restaurants/{restaurantId}/enable.
@@ -397,7 +381,7 @@ func (h *RestaurantHandler) UpdateRestaurantSettings(w http.ResponseWriter, r *h
 //	@Accept			json
 //	@Produce		json
 //	@Param			restaurantId	path		string					true	"Restaurant ID"
-//	@Success		200				{object}	model.RestaurantResponse	"Restaurant enabled successfully"
+//	@Success		200				{object}	model.Restaurant	"Restaurant enabled successfully"
 //	@Failure		400				{object}	map[string]string		"Invalid restaurant ID"
 //	@Failure		404				{object}	map[string]string		"Restaurant not found"
 //	@Failure		500				{object}	map[string]string		"Internal server error"
@@ -426,7 +410,7 @@ func (h *RestaurantHandler) EnableRestaurant(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	h.writeJSON(w, http.StatusOK, enabledRestaurant.ToResponse())
+	h.writeJSON(w, http.StatusOK, enabledRestaurant)
 }
 
 // DisableRestaurant handles POST /restaurants/{restaurantId}/disable.
@@ -437,7 +421,7 @@ func (h *RestaurantHandler) EnableRestaurant(w http.ResponseWriter, r *http.Requ
 //	@Accept			json
 //	@Produce		json
 //	@Param			restaurantId	path		string					true	"Restaurant ID"
-//	@Success		200				{object}	model.RestaurantResponse	"Restaurant disabled successfully"
+//	@Success		200				{object}	model.Restaurant	"Restaurant disabled successfully"
 //	@Failure		400				{object}	map[string]string		"Invalid restaurant ID"
 //	@Failure		404				{object}	map[string]string		"Restaurant not found"
 //	@Failure		500				{object}	map[string]string		"Internal server error"
@@ -470,7 +454,7 @@ func (h *RestaurantHandler) DisableRestaurant(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	h.writeJSON(w, http.StatusOK, disabledRestaurant.ToResponse())
+	h.writeJSON(w, http.StatusOK, disabledRestaurant)
 }
 
 // GetRestaurantAvailability handles GET /restaurants/{urlNameOrRestId}/availability.
@@ -516,7 +500,7 @@ func (h *RestaurantHandler) GetRestaurantAvailability(w http.ResponseWriter, r *
 //	@Produce		json
 //	@Param			restaurantId	path		string							true	"Restaurant ID"
 //	@Param			subURL			body		model.CreateSubURLRequest		true	"Sub-URL creation data"
-//	@Success		200				{object}	model.RestaurantResponse		"Sub-URL created successfully"
+//	@Success		200				{object}	model.Restaurant		"Sub-URL created successfully"
 //	@Failure		400				{object}	map[string]string				"Invalid request"
 //	@Failure		404				{object}	map[string]string				"Restaurant not found"
 //	@Failure		409				{object}	map[string]string				"Sub-URL name or key already exists"
@@ -558,7 +542,7 @@ func (h *RestaurantHandler) CreateSubURL(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	h.writeJSON(w, http.StatusOK, updatedRestaurant.ToResponse())
+	h.writeJSON(w, http.StatusOK, updatedRestaurant)
 }
 
 // DeleteSubURL handles DELETE /restaurants/{restaurantId}/sub-url/{subUrlId}.
@@ -570,7 +554,7 @@ func (h *RestaurantHandler) CreateSubURL(w http.ResponseWriter, r *http.Request)
 //	@Produce		json
 //	@Param			restaurantId	path		string							true	"Restaurant ID"
 //	@Param			subUrlId		path		string							true	"Sub-URL ID"
-//	@Success		200				{object}	model.RestaurantResponse		"Sub-URL deleted successfully"
+//	@Success		200				{object}	model.Restaurant		"Sub-URL deleted successfully"
 //	@Failure		400				{object}	map[string]string				"Invalid request"
 //	@Failure		404				{object}	map[string]string				"Restaurant or sub-URL not found"
 //	@Failure		500				{object}	map[string]string				"Internal server error"
@@ -615,7 +599,7 @@ func (h *RestaurantHandler) DeleteSubURL(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	h.writeJSON(w, http.StatusOK, updatedRestaurant.ToResponse())
+	h.writeJSON(w, http.StatusOK, updatedRestaurant)
 }
 
 // MarkReservationsAsSeen handles PATCH /restaurants/{restaurantId}/reservations/mark_seen.

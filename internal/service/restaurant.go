@@ -215,6 +215,19 @@ func (rs *RestaurantService) ListRestaurants(ctx context.Context, filters map[st
 	return restaurants, nil
 }
 
+// GetRestaurantsByIDs retrieves restaurants by a list of IDs.
+func (rs *RestaurantService) GetRestaurantsByIDs(ctx context.Context, ids []primitive.ObjectID) ([]*model.Restaurant, error) {
+	if len(ids) == 0 {
+		return []*model.Restaurant{}, nil
+	}
+
+	restaurants, err := rs.restaurantRepo.GetByIDs(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get restaurants by IDs: %w", err)
+	}
+	return restaurants, nil
+}
+
 // GetRestaurantsByLocation retrieves restaurants by location.
 func (rs *RestaurantService) GetRestaurantsByLocation(ctx context.Context, latitude, longitude, radius float64) ([]*model.Restaurant, error) {
 	restaurants, err := rs.restaurantRepo.GetByLocation(ctx, latitude, longitude, radius)

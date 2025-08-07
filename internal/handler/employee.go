@@ -374,7 +374,7 @@ func (h *EmployeeHandler) DeleteEmployee(w http.ResponseWriter, r *http.Request)
 //	@Tags			employees
 //	@Accept			json
 //	@Produce		json
-//	@Success		200		{object}	map[string]interface{}	"List of all employees"
+//	@Success		200		{array}		model.Employee			"List of all employees"
 //	@Failure		403		{object}	map[string]string		"Insufficient permissions"
 //	@Failure		500		{object}	map[string]string		"Internal server error"
 //	@Router			/employees [get]
@@ -415,10 +415,7 @@ func (h *EmployeeHandler) ListEmployees(w http.ResponseWriter, r *http.Request) 
 	}
 
 	h.logger.Info("Listed employees", "requester_id", employee.ID, "total_count", len(filteredEmployees))
-	h.writeJSON(w, http.StatusOK, map[string]interface{}{
-		"employees": filteredEmployees,
-		"count":     len(filteredEmployees),
-	})
+	h.writeJSON(w, http.StatusOK, filteredEmployees)
 }
 
 // GetPendingInvitations handles GET /employees/invitations/pending.
@@ -428,7 +425,7 @@ func (h *EmployeeHandler) ListEmployees(w http.ResponseWriter, r *http.Request) 
 //	@Tags			employees
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	map[string]interface{}	"List of pending invitations"
+//	@Success		200	{array}	model.PendingInvitation	"List of pending invitations"
 //	@Failure		500	{object}	map[string]string		"Internal server error"
 //	@Router			/employees/invitations/pending [get]
 //	@Security		BearerAuth
@@ -441,26 +438,23 @@ func (h *EmployeeHandler) GetPendingInvitations(w http.ResponseWriter, r *http.R
 	}
 
 	// Convert to response format
-	invitations := make([]map[string]interface{}, len(pendingCodes))
+	invitations := make([]model.PendingInvitation, len(pendingCodes))
 	for i, code := range pendingCodes {
 		expiresAt := code.CreatedAt.Add(model.AuthRequestExpiration)
-		invitations[i] = map[string]interface{}{
-			"id":          code.ID.Hex(),
-			"email":       code.Email,
-			"fullName":    code.FullName,
-			"role":        code.Role,
-			"restaurants": code.RestaurantsIDs,
-			"createdAt":   code.CreatedAt,
-			"expiresAt":   expiresAt,
-			"status":      "pending",
+		invitations[i] = model.PendingInvitation{
+			ID:          code.ID.Hex(),
+			Email:       code.Email,
+			FullName:    code.FullName,
+			Role:        code.Role,
+			Restaurants: code.RestaurantsIDs,
+			CreatedAt:   code.CreatedAt,
+			ExpiresAt:   expiresAt,
+			Status:      "pending",
 		}
 	}
 
 	h.logger.Info("Retrieved pending invitations", "count", len(invitations))
-	h.writeJSON(w, http.StatusOK, map[string]interface{}{
-		"invitations": invitations,
-		"count":       len(invitations),
-	})
+	h.writeJSON(w, http.StatusOK, invitations)
 }
 
 // DeleteInvitation handles DELETE /employees/invitations/{invitationId}.

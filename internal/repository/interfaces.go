@@ -57,6 +57,9 @@ type RestaurantRepository interface {
 
 	// GetByLocation retrieves restaurants by location
 	GetByLocation(ctx context.Context, latitude, longitude, radius float64) ([]*model.Restaurant, error)
+
+	// GetByIDs retrieves restaurants by a list of IDs
+	GetByIDs(ctx context.Context, ids []primitive.ObjectID) ([]*model.Restaurant, error)
 }
 
 // ReservationRepository defines the interface for reservation data access.

@@ -104,39 +104,31 @@ type UpdateRestaurantRequest struct {
 	Rooms       []Room    `json:"rooms,omitempty"`
 }
 
-// RestaurantResponse represents the response when returning restaurant data.
-type RestaurantResponse struct {
-	ID          primitive.ObjectID `json:"id"`
-	Name        string             `json:"name"`
-	URLName     string             `json:"urlName"`
-	Address     string             `json:"address"`
-	Phone       string             `json:"phone"`
-	Email       string             `json:"email"`
-	Description string             `json:"description"`
-	IsActive    bool               `json:"isActive"`
-	UTCOffset   int                `json:"utcOffset"`
-	Settings    Settings           `json:"settings"`
-	RoomCount   int                `json:"roomCount"`
-	CreatedAt   time.Time          `json:"createdAt"`
-	UpdatedAt   time.Time          `json:"updatedAt"`
+// RestaurantSummary represents a summary response when returning restaurant data (matches Python RestaurantMiniSchema).
+type RestaurantSummary struct {
+	ID        primitive.ObjectID `json:"id"`
+	Name      string             `json:"name"`
+	URLName   string             `json:"urlName"`
+	Address   string             `json:"address"`
+	City      string             `json:"city"`
+	Phone     string             `json:"phone"`
+	UTCOffset int                `json:"utcOffset"`
+	IsActive  bool               `json:"isActive"`
+	// Role would be added when we know the employee's role for this restaurant
 }
 
-// ToResponse converts a Restaurant to RestaurantResponse.
-func (r *Restaurant) ToResponse() *RestaurantResponse {
-	return &RestaurantResponse{
-		ID:          r.ID,
-		Name:        r.Name,
-		URLName:     r.URLName,
-		Address:     r.Address,
-		Phone:       r.Phone,
-		Email:       r.Email,
-		Description: r.Description,
-		IsActive:    r.IsActive,
-		UTCOffset:   r.UTCOffset,
-		Settings:    r.Settings,
-		RoomCount:   len(r.Rooms),
-		CreatedAt:   r.CreatedAt,
-		UpdatedAt:   r.UpdatedAt,
+// ToSummary converts a Restaurant to RestaurantSummary (matches Python RestaurantMiniSchema).
+func (r *Restaurant) ToSummary() *RestaurantSummary {
+	return &RestaurantSummary{
+		ID:        r.ID,
+		Name:      r.Name,
+		URLName:   r.URLName,
+		Address:   r.Address,
+		City:      r.City,
+		Phone:     r.Phone,
+		UTCOffset: r.UTCOffset,
+		IsActive:  r.IsActive,
+		// Role would be set by the caller based on employee's role for this restaurant
 	}
 }
 

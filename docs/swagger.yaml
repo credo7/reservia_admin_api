@@ -365,6 +365,34 @@ definitions:
       isPending:
         type: boolean
     type: object
+  model.PendingInvitation:
+    properties:
+      createdAt:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      email:
+        example: john.doe@example.com
+        type: string
+      expiresAt:
+        example: "2023-01-02T00:00:00Z"
+        type: string
+      fullName:
+        example: John Doe
+        type: string
+      id:
+        example: 507f1f77bcf86cd799439011
+        type: string
+      restaurants:
+        items:
+          type: string
+        type: array
+      role:
+        example: admin
+        type: string
+      status:
+        example: pending
+        type: string
+    type: object
   model.PersonalCabinetUpdateRequest:
     properties:
       fullName:
@@ -432,6 +460,51 @@ definitions:
       user_notes:
         type: string
     type: object
+  model.Restaurant:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      createdAt:
+        type: string
+      defaultRoomId:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      isClosedForAllRooms:
+        type: boolean
+      isDefaultScheduleForAllRooms:
+        type: boolean
+      isSpecialScheduleForAllRooms:
+        type: boolean
+      name:
+        type: string
+      phone:
+        type: string
+      rooms:
+        items:
+          $ref: '#/definitions/model.Room'
+        type: array
+      settings:
+        $ref: '#/definitions/model.Settings'
+      subUrls:
+        items:
+          $ref: '#/definitions/model.SubURL'
+        type: array
+      updatedAt:
+        type: string
+      urlName:
+        type: string
+      utcOffset:
+        type: integer
+    type: object
   model.RestaurantAvailabilityResponse:
     properties:
       date:
@@ -448,15 +521,11 @@ definitions:
       urlName:
         type: string
     type: object
-  model.RestaurantResponse:
+  model.RestaurantSummary:
     properties:
       address:
         type: string
-      createdAt:
-        type: string
-      description:
-        type: string
-      email:
+      city:
         type: string
       id:
         type: string
@@ -465,12 +534,6 @@ definitions:
       name:
         type: string
       phone:
-        type: string
-      roomCount:
-        type: integer
-      settings:
-        $ref: '#/definitions/model.Settings'
-      updatedAt:
         type: string
       urlName:
         type: string
@@ -575,6 +638,15 @@ definitions:
     - StatusNoShow
     - StatusCanceledByClient
     - StatusCanceledByAdmin
+  model.SubURL:
+    properties:
+      id:
+        type: string
+      key:
+        type: string
+      name:
+        type: string
+    type: object
   model.Table:
     properties:
       capacity:
@@ -1019,8 +1091,9 @@ paths:
         "200":
           description: List of all employees
           schema:
-            additionalProperties: true
-            type: object
+            items:
+              $ref: '#/definitions/model.Employee'
+            type: array
         "403":
           description: Insufficient permissions
           schema:
@@ -1334,8 +1407,9 @@ paths:
         "200":
           description: List of pending invitations
           schema:
-            additionalProperties: true
-            type: object
+            items:
+              $ref: '#/definitions/model.PendingInvitation'
+            type: array
         "500":
           description: Internal server error
           schema:
@@ -1918,27 +1992,21 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieve a list of restaurants with filtering and pagination
-      parameters:
-      - description: 'Number of restaurants to return (default: 10)'
-        in: query
-        name: limit
-        type: integer
-      - description: 'Number of restaurants to skip (default: 0)'
-        in: query
-        name: offset
-        type: integer
-      - description: Filter by active status
-        in: query
-        name: is_active
-        type: boolean
+      description: Retrieve all restaurants associated with the authenticated employee
       produces:
       - application/json
       responses:
         "200":
-          description: List of restaurants with pagination info
+          description: List of associated restaurants
           schema:
-            additionalProperties: true
+            items:
+              $ref: '#/definitions/model.RestaurantSummary'
+            type: array
+        "401":
+          description: Unauthorized - authentication required
+          schema:
+            additionalProperties:
+              type: string
             type: object
         "500":
           description: Internal server error
@@ -1946,7 +2014,9 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: List restaurants
+      security:
+      - BearerAuth: []
+      summary: List associated restaurants
       tags:
       - restaurants
     post:
@@ -1967,7 +2037,7 @@ paths:
         "201":
           description: Restaurant created successfully
           schema:
-            $ref: '#/definitions/model.RestaurantResponse'
+            $ref: '#/definitions/model.RestaurantSummary'
         "400":
           description: Invalid request body
           schema:
@@ -2008,7 +2078,7 @@ paths:
         "200":
           description: Restaurant found
           schema:
-            $ref: '#/definitions/model.RestaurantResponse'
+            $ref: '#/definitions/model.Restaurant'
         "400":
           description: Invalid restaurant ID
           schema:
@@ -2041,7 +2111,7 @@ paths:
         "200":
           description: Restaurant disabled successfully
           schema:
-            $ref: '#/definitions/model.RestaurantResponse'
+            $ref: '#/definitions/model.Restaurant'
         "400":
           description: Invalid restaurant ID
           schema:
@@ -2082,7 +2152,7 @@ paths:
         "200":
           description: Restaurant enabled successfully
           schema:
-            $ref: '#/definitions/model.RestaurantResponse'
+            $ref: '#/definitions/model.Restaurant'
         "400":
           description: Invalid restaurant ID
           schema:
@@ -2772,9 +2842,13 @@ paths:
         in: query
         name: table_id
         type: string
-      - description: Filter by date (YYYY-MM-DD format)
+      - description: Filter by start date (YYYY-MM-DD format)
         in: query
         name: start_date
+        type: string
+      - description: Filter by end date (YYYY-MM-DD format)
+        in: query
+        name: end_date
         type: string
       - description: Filter by seen status
         in: query
@@ -2892,7 +2966,7 @@ paths:
         "200":
           description: Restaurant settings updated successfully
           schema:
-            $ref: '#/definitions/model.RestaurantResponse'
+            $ref: '#/definitions/model.Restaurant'
         "400":
           description: Invalid request
           schema:
@@ -2939,7 +3013,7 @@ paths:
         "200":
           description: Sub-URL created successfully
           schema:
-            $ref: '#/definitions/model.RestaurantResponse'
+            $ref: '#/definitions/model.Restaurant'
         "400":
           description: Invalid request
           schema:
@@ -2991,7 +3065,7 @@ paths:
         "200":
           description: Sub-URL deleted successfully
           schema:
-            $ref: '#/definitions/model.RestaurantResponse'
+            $ref: '#/definitions/model.Restaurant'
         "400":
           description: Invalid request
           schema:
@@ -3032,7 +3106,7 @@ paths:
         "200":
           description: Restaurant found
           schema:
-            $ref: '#/definitions/model.RestaurantResponse'
+            $ref: '#/definitions/model.Restaurant'
         "404":
           description: Restaurant not found
           schema:

@@ -440,8 +440,10 @@ const docTemplate = `{
                     "200": {
                         "description": "List of all employees",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Employee"
+                            }
                         }
                     },
                     "403": {
@@ -623,8 +625,10 @@ const docTemplate = `{
                     "200": {
                         "description": "List of pending invitations",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.PendingInvitation"
+                            }
                         }
                     },
                     "500": {
@@ -1825,7 +1829,12 @@ const docTemplate = `{
         },
         "/restaurants": {
             "get": {
-                "description": "Retrieve a list of restaurants with filtering and pagination",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all restaurants associated with the authenticated employee",
                 "consumes": [
                     "application/json"
                 ],
@@ -1835,33 +1844,24 @@ const docTemplate = `{
                 "tags": [
                     "restaurants"
                 ],
-                "summary": "List restaurants",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Number of restaurants to return (default: 10)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Number of restaurants to skip (default: 0)",
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Filter by active status",
-                        "name": "is_active",
-                        "in": "query"
-                    }
-                ],
+                "summary": "List associated restaurants",
                 "responses": {
                     "200": {
-                        "description": "List of restaurants with pagination info",
+                        "description": "List of associated restaurants",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.RestaurantSummary"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - authentication required",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
@@ -1907,7 +1907,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Restaurant created successfully",
                         "schema": {
-                            "$ref": "#/definitions/model.RestaurantResponse"
+                            "$ref": "#/definitions/model.RestaurantSummary"
                         }
                     },
                     "400": {
@@ -2021,7 +2021,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Restaurant found",
                         "schema": {
-                            "$ref": "#/definitions/model.RestaurantResponse"
+                            "$ref": "#/definitions/model.Restaurant"
                         }
                     },
                     "400": {
@@ -2076,7 +2076,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Restaurant disabled successfully",
                         "schema": {
-                            "$ref": "#/definitions/model.RestaurantResponse"
+                            "$ref": "#/definitions/model.Restaurant"
                         }
                     },
                     "400": {
@@ -2140,7 +2140,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Restaurant enabled successfully",
                         "schema": {
-                            "$ref": "#/definitions/model.RestaurantResponse"
+                            "$ref": "#/definitions/model.Restaurant"
                         }
                     },
                     "400": {
@@ -3206,8 +3206,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by date (YYYY-MM-DD format)",
+                        "description": "Filter by start date (YYYY-MM-DD format)",
                         "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by end date (YYYY-MM-DD format)",
+                        "name": "end_date",
                         "in": "query"
                     },
                     {
@@ -3384,7 +3390,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Restaurant settings updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/model.RestaurantResponse"
+                            "$ref": "#/definitions/model.Restaurant"
                         }
                     },
                     "400": {
@@ -3457,7 +3463,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Sub-URL created successfully",
                         "schema": {
-                            "$ref": "#/definitions/model.RestaurantResponse"
+                            "$ref": "#/definitions/model.Restaurant"
                         }
                     },
                     "400": {
@@ -3537,7 +3543,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Sub-URL deleted successfully",
                         "schema": {
-                            "$ref": "#/definitions/model.RestaurantResponse"
+                            "$ref": "#/definitions/model.Restaurant"
                         }
                     },
                     "400": {
@@ -3601,7 +3607,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Restaurant found",
                         "schema": {
-                            "$ref": "#/definitions/model.RestaurantResponse"
+                            "$ref": "#/definitions/model.Restaurant"
                         }
                     },
                     "404": {
@@ -4195,6 +4201,45 @@ const docTemplate = `{
                 }
             }
         },
+        "model.PendingInvitation": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string",
+                    "example": "2023-01-01T00:00:00Z"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "john.doe@example.com"
+                },
+                "expiresAt": {
+                    "type": "string",
+                    "example": "2023-01-02T00:00:00Z"
+                },
+                "fullName": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "507f1f77bcf86cd799439011"
+                },
+                "restaurants": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "role": {
+                    "type": "string",
+                    "example": "admin"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending"
+                }
+            }
+        },
         "model.PersonalCabinetUpdateRequest": {
             "type": "object",
             "properties": {
@@ -4295,6 +4340,74 @@ const docTemplate = `{
                 }
             }
         },
+        "model.Restaurant": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "defaultRoomId": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "isClosedForAllRooms": {
+                    "type": "boolean"
+                },
+                "isDefaultScheduleForAllRooms": {
+                    "type": "boolean"
+                },
+                "isSpecialScheduleForAllRooms": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "rooms": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Room"
+                    }
+                },
+                "settings": {
+                    "$ref": "#/definitions/model.Settings"
+                },
+                "subUrls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SubURL"
+                    }
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "urlName": {
+                    "type": "string"
+                },
+                "utcOffset": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.RestaurantAvailabilityResponse": {
             "type": "object",
             "properties": {
@@ -4319,19 +4432,13 @@ const docTemplate = `{
                 }
             }
         },
-        "model.RestaurantResponse": {
+        "model.RestaurantSummary": {
             "type": "object",
             "properties": {
                 "address": {
                     "type": "string"
                 },
-                "createdAt": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "email": {
+                "city": {
                     "type": "string"
                 },
                 "id": {
@@ -4344,15 +4451,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "phone": {
-                    "type": "string"
-                },
-                "roomCount": {
-                    "type": "integer"
-                },
-                "settings": {
-                    "$ref": "#/definitions/model.Settings"
-                },
-                "updatedAt": {
                     "type": "string"
                 },
                 "urlName": {
@@ -4499,6 +4597,20 @@ const docTemplate = `{
                 "StatusCanceledByClient",
                 "StatusCanceledByAdmin"
             ]
+        },
+        "model.SubURL": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
         },
         "model.Table": {
             "type": "object",

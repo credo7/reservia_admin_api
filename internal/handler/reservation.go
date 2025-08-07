@@ -109,7 +109,8 @@ func (h *ReservationHandler) CreateReservationByEmployee(w http.ResponseWriter, 
 //	@Param			offset				query		int		false	"Number of reservations to skip (default: 0)"
 //	@Param			status				query		string	false	"Filter by status"
 //	@Param			table_id			query		string	false	"Filter by table ID"
-//	@Param			start_date			query		string	false	"Filter by date (YYYY-MM-DD format)"
+//	@Param			start_date			query		string	false	"Filter by start date (YYYY-MM-DD format)"
+//	@Param			end_date			query		string	false	"Filter by end date (YYYY-MM-DD format)"
 //	@Param			is_seen				query		bool	false	"Filter by seen status"
 //	@Success		200					{object}	map[string]interface{}	"Reservations retrieved successfully"
 //	@Failure		400					{object}	map[string]string		"Invalid request"
@@ -147,6 +148,7 @@ func (h *ReservationHandler) GetReservationsByRoom(w http.ResponseWriter, r *htt
 	status := r.URL.Query().Get("status")
 	tableID := r.URL.Query().Get("table_id")
 	startDate := r.URL.Query().Get("start_date")
+	endDate := r.URL.Query().Get("end_date")
 	isSeenStr := r.URL.Query().Get("is_seen")
 
 	limit := 50 // default
@@ -173,6 +175,9 @@ func (h *ReservationHandler) GetReservationsByRoom(w http.ResponseWriter, r *htt
 	}
 	if startDate != "" {
 		filters["start_date"] = startDate
+	}
+	if endDate != "" {
+		filters["end_date"] = endDate
 	}
 	if isSeenStr != "" {
 		if isSeen, err := strconv.ParseBool(isSeenStr); err == nil {

@@ -116,3 +116,28 @@ func (r *RestaurantRepository) GetByLocation(ctx context.Context, latitude, long
 	// For now, return all restaurants - in a real implementation, you'd use geospatial queries
 	return r.List(ctx, map[string]interface{}{}, 100, 0)
 }
+
+// GetByIDs retrieves restaurants by a list of IDs.
+func (r *RestaurantRepository) GetByIDs(ctx context.Context, ids []primitive.ObjectID) ([]*model.Restaurant, error) {
+	if len(ids) == 0 {
+		return []*model.Restaurant{}, nil
+	}
+
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+	cursor, err := r.collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var restaurants []*model.Restaurant
+	for cursor.Next(ctx) {
+		var rest model.Restaurant
+		if err := cursor.Decode(&rest); err != nil {
+			return nil, err
+		}
+		restaurants = append(restaurants, &rest)
+	}
+
+	return restaurants, cursor.Err()
+}
