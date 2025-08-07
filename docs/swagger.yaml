@@ -99,9 +99,7 @@ definitions:
         maxLength: 200
         minLength: 5
         type: string
-      city:
-        maxLength: 100
-        minLength: 1
+      cityId:
         type: string
       name:
         maxLength: 100
@@ -111,7 +109,7 @@ definitions:
         type: string
     required:
     - address
-    - city
+    - cityId
     - name
     - phone
     type: object

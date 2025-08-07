@@ -85,10 +85,10 @@ type DayHours struct {
 // CreateRestaurantRequest represents a request to create a new restaurant.
 // This matches the Python CreateRestaurantBodySchema with minimal required fields.
 type CreateRestaurantRequest struct {
-	Name    string `json:"name" validate:"required,min=2,max=100"`
-	Phone   string `json:"phone" validate:"required"`
-	Address string `json:"address" validate:"required,min=5,max=200"`
-	City    string `json:"city" validate:"required,min=1,max=100"`
+	Name    string             `json:"name" validate:"required,min=2,max=100"`
+	Phone   string             `json:"phone" validate:"required"`
+	Address string             `json:"address" validate:"required,min=5,max=200"`
+	CityID  primitive.ObjectID `json:"cityId" validate:"required" bson:"city_id"`
 }
 
 // UpdateRestaurantRequest represents a request to update a restaurant.

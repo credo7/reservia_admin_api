@@ -6,6 +6,7 @@ import (
 	"github.com/reservia/api/internal/model"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/reservia/api/internal/repository"
@@ -41,6 +42,19 @@ func (r *CityRepository) GetAll(ctx context.Context) ([]*model.City, error) {
 	}
 
 	return cities, cursor.Err()
+}
+
+// GetByID retrieves a city by ID.
+func (r *CityRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*model.City, error) {
+	var c model.City
+	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&c)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &c, nil
 }
 
 // GetByName retrieves a city by name.

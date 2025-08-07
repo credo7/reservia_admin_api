@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/reservia/api/pkg/logger"
+	"github.com/reservia/api/pkg/validator"
 )
 
 // RestaurantHandler handles restaurant-related HTTP requests.
@@ -21,6 +22,7 @@ type RestaurantHandler struct {
 	restaurantService  *service.RestaurantService
 	reservationService *service.ReservationService
 	authService        *service.AuthService
+	validator          *validator.Validator
 	logger             logger.Logger
 }
 
@@ -30,6 +32,7 @@ func NewRestaurantHandler(restaurantService *service.RestaurantService, reservat
 		restaurantService:  restaurantService,
 		reservationService: reservationService,
 		authService:        authService,
+		validator:          validator.New(),
 		logger:             logger,
 	}
 }
@@ -60,6 +63,12 @@ func (h *RestaurantHandler) CreateRestaurant(w http.ResponseWriter, r *http.Requ
 	var req model.CreateRestaurantRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.writeError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validate request data using struct tags
+	if err := h.validator.Struct(req); err != nil {
+		h.writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

@@ -3833,7 +3833,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "address",
-                "city",
+                "cityId",
                 "name",
                 "phone"
             ],
@@ -3843,10 +3843,8 @@ const docTemplate = `{
                     "maxLength": 200,
                     "minLength": 5
                 },
-                "city": {
-                    "type": "string",
-                    "maxLength": 100,
-                    "minLength": 1
+                "cityId": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string",

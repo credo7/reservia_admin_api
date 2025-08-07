@@ -34,11 +34,16 @@ func NewRestaurantService(restaurantRepo repository.RestaurantRepository, employ
 // CreateRestaurant creates a new restaurant with bootstrap logic (matches Python implementation).
 // The creating employee automatically becomes the owner of the restaurant.
 func (rs *RestaurantService) CreateRestaurant(ctx context.Context, creator *model.Employee, req *model.CreateRestaurantRequest) (*model.Restaurant, error) {
-	// 1. Look up city to get UTC offset (matching Python approach)
-	city, err := rs.cityService.GetCityByName(ctx, req.City)
+	// 1. Look up city to get UTC offset (using city ID)
+	city, err := rs.cityService.GetCityByID(ctx, req.CityID)
 	if err != nil {
-		rs.logger.Error("Failed to find city", "city", req.City, "error", err)
-		return nil, fmt.Errorf("city not found: %s", req.City)
+		rs.logger.Error("Failed to find city", "cityId", req.CityID.Hex(), "error", err)
+		return nil, fmt.Errorf("city not found: %s", req.CityID.Hex())
+	}
+
+	if city == nil {
+		rs.logger.Error("City not found", "cityId", req.CityID.Hex())
+		return nil, fmt.Errorf("city not found: %s", req.CityID.Hex())
 	}
 
 	// 2. Generate URL name from restaurant name (matching Python slugification)
@@ -80,6 +85,7 @@ func (rs *RestaurantService) CreateRestaurant(ctx context.Context, creator *mode
 	newRestaurant := &model.Restaurant{
 		Name:        req.Name,
 		URLName:     urlName, // Auto-generated from name
+		City:        city.Name,        // Auto-resolved from city
 		Address:     req.Address,
 		Phone:       req.Phone,
 		Email:       "",               // Empty by default, can be set later
@@ -120,7 +126,7 @@ func (rs *RestaurantService) CreateRestaurant(ctx context.Context, creator *mode
 		"owner_employee_id", creator.ID.Hex(),
 		"restaurant_name", newRestaurant.Name,
 		"url_name", newRestaurant.URLName,
-		"city", req.City,
+		"city", city.Name,
 		"utc_offset", newRestaurant.UTCOffset)
 	return newRestaurant, nil
 }

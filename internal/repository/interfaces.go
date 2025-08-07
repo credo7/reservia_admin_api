@@ -91,6 +91,9 @@ type CityRepository interface {
 	// GetAll retrieves all cities
 	GetAll(ctx context.Context) ([]*model.City, error)
 
+	// GetByID retrieves a city by ID
+	GetByID(ctx context.Context, id primitive.ObjectID) (*model.City, error)
+
 	// GetByName retrieves a city by name
 	GetByName(ctx context.Context, name string) (*model.City, error)
 
