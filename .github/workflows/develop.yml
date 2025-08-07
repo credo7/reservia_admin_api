@@ -104,23 +104,17 @@ jobs:
     - name: Deploy to development
       timeout-minutes: 5
       run: |
-        # Use commit SHA as image tag for guaranteed uniqueness
-        IMAGE_TAG="develop-${GITHUB_SHA::8}"
         helm upgrade --install admin-api ./charts \
           -f ./charts/dev.properties.yaml \
-          --set image.tag=$IMAGE_TAG \
           --namespace reservia-dev \
           --create-namespace \
           --wait
     
-    - name: Force rollout restart if using dev-latest
+    - name: Force rollout restart to pull latest image
       run: |
-        # If we're still using dev-latest, force a restart to pull the new image
-        if helm get values admin-api -n reservia-dev | grep -q 'tag: dev-latest'; then
-          echo "Using dev-latest tag, forcing rollout restart..."
-          kubectl rollout restart deployment/admin-api -n reservia-dev
-          kubectl rollout status deployment/admin-api -n reservia-dev --timeout=300s
-        fi
+        echo "Forcing rollout restart to pull latest dev-latest image..."
+        kubectl rollout restart deployment/admin-api -n reservia-dev
+        kubectl rollout status deployment/admin-api -n reservia-dev --timeout=300s
         
     - name: Verify deployment
       run: |
