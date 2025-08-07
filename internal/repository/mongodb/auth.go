@@ -280,7 +280,7 @@ func (r *AuthRepository) UpdateTelegramVerificationCode(ctx context.Context, cod
 	filter := bson.M{"_id": code.ID}
 	update := bson.M{
 		"$set": bson.M{
-			"user_id":    code.UserID,
+			"employee_id":    code.EmployeeID,
 			"is_used":    code.IsUsed,
 			"updated_at": time.Now(),
 		},

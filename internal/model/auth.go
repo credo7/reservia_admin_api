@@ -180,7 +180,7 @@ type EmployeeRegistrationCode struct {
 // TelegramVerificationCode represents a Telegram authentication request code.
 type TelegramVerificationCode struct {
 	ID        primitive.ObjectID  `json:"id" bson:"_id,omitempty"`
-	UserID    *primitive.ObjectID `json:"userId,omitempty" bson:"user_id,omitempty"`
+	EmployeeID    *primitive.ObjectID `json:"employeeId,omitempty" bson:"employee_id,omitempty"`
 	CreatedAt time.Time           `json:"createdAt" bson:"created_at"`
 	UpdatedAt time.Time           `json:"updatedAt" bson:"updated_at"`
 	IsUsed    bool                `json:"isUsed" bson:"is_used"`
@@ -203,9 +203,9 @@ func (tvc *TelegramVerificationCode) IsExpired() bool {
 	return time.Now().After(tvc.CreatedAt.Add(AuthRequestExpiration))
 }
 
-// IsCompleted checks if the Telegram verification code has been completed (user_id is set).
+// IsCompleted checks if the Telegram verification code has been completed (employee_id is set).
 func (tvc *TelegramVerificationCode) IsCompleted() bool {
-	return tvc.UserID != nil
+	return tvc.EmployeeID != nil
 }
 
 // IsExpired checks if the action request has expired.
@@ -213,15 +213,15 @@ func (ar *ActionRequest) IsExpired() bool {
 	return time.Now().After(ar.CreatedAt.Add(AuthRequestExpiration))
 }
 
-// IsCompleted checks if the action request has been completed (user_id is set).
+// IsCompleted checks if the action request has been completed (employee_id is set).
 func (ar *ActionRequest) IsCompleted() bool {
-	return ar.UserID != nil
+	return ar.EmployeeID != nil
 }
 
 // ActionRequest represents a general action request (adapted from Python ActionRequestSchema for Go/MongoDB).
 type ActionRequest struct {
 	ID             primitive.ObjectID   `json:"id" bson:"_id,omitempty"`
-	UserID         *primitive.ObjectID  `json:"userId,omitempty" bson:"user_id,omitempty"`
+	EmployeeID         *primitive.ObjectID  `json:"employeeId,omitempty" bson:"employee_id,omitempty"`
 	Action         string               `json:"action" bson:"action"`
 	Email          string               `json:"email,omitempty" bson:"email,omitempty"`
 	FullName       string               `json:"fullName,omitempty" bson:"full_name,omitempty"`

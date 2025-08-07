@@ -313,7 +313,7 @@ func (as *AuthService) VerifyTelegram(ctx context.Context, requestID string) (*m
 		return nil, fmt.Errorf("authorization request has expired")
 	}
 
-	// Check if user has completed the authorization (user_id is set)
+	// Check if user has completed the authorization (employee_id is set)
 	if !tgCode.IsCompleted() {
 		as.logger.Info("Telegram auth request is still pending", "request_id", requestID)
 		return &model.PendingAuthResponse{
@@ -336,13 +336,13 @@ func (as *AuthService) VerifyTelegram(ctx context.Context, requestID string) (*m
 	}
 
 	// Generate access token
-	accessToken, err := as.generateToken(*tgCode.UserID)
+	accessToken, err := as.generateToken(*tgCode.EmployeeID)
 	if err != nil {
-		as.logger.Error("Failed to generate tokens after Telegram auth", "user_id", tgCode.UserID, "error", err)
+		as.logger.Error("Failed to generate tokens after Telegram auth", "employee_id", tgCode.EmployeeID, "error", err)
 		return nil, fmt.Errorf("failed to generate access token")
 	}
 
-	as.logger.Info("Telegram authorization completed successfully", "request_id", requestID, "user_id", tgCode.UserID)
+	as.logger.Info("Telegram authorization completed successfully", "request_id", requestID, "employee_id", tgCode.EmployeeID)
 
 	return &model.PendingAuthResponse{
 		IsPending:   false,
@@ -479,7 +479,7 @@ func (as *AuthService) RegisterEmployee(ctx context.Context, codeRequestID, code
 		as.logger.Info("Successfully created new employee", "employee_id", newEmployee.ID, "email", empRegCode.Email)
 	}
 
-	// Mark invitation as used (matches Python ActionRequestService.set_user_id_and_mark_as_used)
+	// Mark invitation as used (matches Python ActionRequestService.set_employee_id_and_mark_as_used)
 	empRegCode.IsUsed = true
 	empRegCode.EmployeeID = &targetEmployee.ID
 	empRegCode.UpdatedAt = time.Now()
@@ -621,6 +621,141 @@ func (as *AuthService) generateInvitationCode() (string, error) {
 	}
 
 	return code, nil
+}
+
+// ConnectTelegram creates a Telegram connection request for an employee.
+func (as *AuthService) ConnectTelegram(ctx context.Context, employeeID primitive.ObjectID) (*model.TelegramConnectionResponse, error) {
+	as.logger.Info("Creating Telegram connection request", "employee_id", employeeID)
+
+	// Create Telegram verification code for connection
+	tgCode := &model.TelegramVerificationCode{
+		ID:        primitive.NewObjectID(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		IsUsed:    false,
+	}
+
+	// Save Telegram verification code to database
+	if err := as.authRepo.CreateTelegramVerificationCode(ctx, tgCode); err != nil {
+		as.logger.Error("Failed to create Telegram verification code for connection", "error", err)
+		return nil, fmt.Errorf("failed to create Telegram connection request")
+	}
+
+	// Generate Telegram bot URL for connection (similar to auth but for connection)
+	tgUrl := fmt.Sprintf("https://t.me/%s?start=connect_request_id=%s",
+		as.config.Telegram.AdminBotUsername, tgCode.ID.Hex())
+
+	as.logger.Info("Telegram connection request created", "request_id", tgCode.ID.Hex(), "employee_id", employeeID)
+
+	return &model.TelegramConnectionResponse{
+		ConnectionRequestID: tgCode.ID.Hex(),
+		TelegramURL:         tgUrl,
+	}, nil
+}
+
+// CheckTelegramConnection checks the status of a Telegram connection request.
+func (as *AuthService) CheckTelegramConnection(ctx context.Context, requestID string, employeeID primitive.ObjectID) (*model.TelegramConnectionVerifyResponse, error) {
+	as.logger.Info("Checking Telegram connection status", "request_id", requestID, "employee_id", employeeID)
+
+	// Get Telegram verification code by ID
+	tgCode, err := as.authRepo.GetTelegramVerificationCode(ctx, requestID)
+	if err != nil {
+		as.logger.Error("Telegram connection request not found", "request_id", requestID, "error", err)
+		return nil, fmt.Errorf("invalid connection request ID")
+	}
+
+	// Check if request has expired
+	if tgCode.IsExpired() {
+		as.logger.Warn("Telegram connection request has expired", "request_id", requestID)
+		return &model.TelegramConnectionVerifyResponse{
+			IsPending: false,
+			Success:   false,
+		}, nil
+	}
+
+	// Check if connection has been completed (employee_id is set)
+	if !tgCode.IsCompleted() {
+		as.logger.Info("Telegram connection request is still pending", "request_id", requestID)
+		return &model.TelegramConnectionVerifyResponse{
+			IsPending: true,
+			Success:   false,
+		}, nil
+	}
+
+	// Check if already used
+	if tgCode.IsUsed {
+		as.logger.Warn("Telegram connection request already used", "request_id", requestID)
+		return &model.TelegramConnectionVerifyResponse{
+			IsPending: false,
+			Success:   false,
+		}, nil
+	}
+
+	// Connection completed successfully - get both employees
+	targetEmployee, err := as.employeeRepo.GetByID(ctx, employeeID)
+	if err != nil {
+		as.logger.Error("Failed to get target employee for Telegram connection", "employee_id", employeeID, "error", err)
+		return nil, fmt.Errorf("employee not found")
+	}
+
+	// Get the Telegram employee (the one who clicked the bot link)
+	telegramEmployee, err := as.employeeRepo.GetByID(ctx, *tgCode.EmployeeID)
+	if err != nil {
+		as.logger.Error("Failed to get Telegram employee", "telegram_employee_id", *tgCode.EmployeeID, "error", err)
+		return nil, fmt.Errorf("Telegram employee not found")
+	}
+
+	// Transfer Telegram data from bot employee to target employee
+	targetEmployee.TelegramIsBot = telegramEmployee.TelegramIsBot
+	targetEmployee.TelegramID = telegramEmployee.TelegramID
+	targetEmployee.TelegramChatID = telegramEmployee.TelegramChatID
+	targetEmployee.TelegramUsername = telegramEmployee.TelegramUsername
+	targetEmployee.TelegramLang = telegramEmployee.TelegramLang
+	targetEmployee.TelegramPremium = telegramEmployee.TelegramPremium
+	targetEmployee.UpdatedAt = time.Now()
+
+	if err := as.employeeRepo.Update(ctx, targetEmployee); err != nil {
+		as.logger.Error("Failed to update target employee with Telegram data", "employee_id", employeeID, "error", err)
+		return nil, fmt.Errorf("failed to connect Telegram account")
+	}
+
+	// Mark verification code as used
+	tgCode.IsUsed = true
+	tgCode.UpdatedAt = time.Now()
+	if err := as.authRepo.UpdateTelegramVerificationCode(ctx, tgCode); err != nil {
+		as.logger.Error("Failed to mark Telegram connection code as used", "request_id", requestID, "error", err)
+		// Don't return error here as the connection was successful
+	}
+
+	as.logger.Info("Telegram connection completed successfully", "request_id", requestID, "target_employee_id", employeeID, "telegram_employee_id", *tgCode.EmployeeID, "telegram_id", *telegramEmployee.TelegramID)
+
+	return &model.TelegramConnectionVerifyResponse{
+		IsPending: false,
+		Success:   true,
+	}, nil
+}
+
+// DisconnectTelegram disconnects Telegram from an employee account.
+func (as *AuthService) DisconnectTelegram(ctx context.Context, employeeID primitive.ObjectID) (*model.Employee, error) {
+	as.logger.Info("Disconnecting Telegram account", "employee_id", employeeID)
+
+	// Get employee
+	employee, err := as.employeeRepo.GetByID(ctx, employeeID)
+	if err != nil {
+		as.logger.Error("Failed to get employee for Telegram disconnection", "employee_id", employeeID, "error", err)
+		return nil, fmt.Errorf("employee not found")
+	}
+
+	// Remove Telegram ID
+	employee.TelegramID = nil
+	employee.UpdatedAt = time.Now()
+	if err := as.employeeRepo.Update(ctx, employee); err != nil {
+		as.logger.Error("Failed to disconnect Telegram from employee", "employee_id", employeeID, "error", err)
+		return nil, fmt.Errorf("failed to disconnect Telegram account")
+	}
+
+	as.logger.Info("Telegram account disconnected successfully", "employee_id", employeeID)
+	return employee, nil
 }
 
 // GetPendingInvitations retrieves all pending employee invitations.

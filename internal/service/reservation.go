@@ -336,7 +336,7 @@ func (rs *ReservationService) UpdateReservationStatus(ctx context.Context, id pr
 		if reservation.CanceledAt == nil {
 			reservation.CanceledAt = &now
 		}
-		reservation.CanceledByUserID = &employeeID
+		reservation.CanceledByEmployeeID = &employeeID
 	}
 
 	// Update in database
@@ -437,7 +437,7 @@ func (rs *ReservationService) CancelReservation(ctx context.Context, id primitiv
 	// Update reservation status
 	reservation.Status = model.StatusCanceledByAdmin
 	reservation.CancellationReason = reason
-	reservation.CanceledByUserID = &employeeID
+	reservation.CanceledByEmployeeID = &employeeID
 	now := time.Now()
 	reservation.CanceledAt = &now
 	reservation.UpdatedAt = now

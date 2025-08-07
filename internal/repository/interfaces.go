@@ -76,9 +76,6 @@ type ReservationRepository interface {
 	// Delete deletes a reservation
 	Delete(ctx context.Context, id primitive.ObjectID) error
 
-	// GetByUserID retrieves reservations by user ID
-	GetByUserID(ctx context.Context, userID primitive.ObjectID, limit, offset int) ([]*model.Reservation, error)
-
 	// GetByRestaurantID retrieves reservations by restaurant ID
 	GetByRestaurantID(ctx context.Context, restaurantID primitive.ObjectID, limit, offset int) ([]*model.Reservation, error)
 

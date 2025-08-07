@@ -67,31 +67,6 @@ func (r *ReservationRepository) Delete(ctx context.Context, id primitive.ObjectI
 	return err
 }
 
-// GetByUserID retrieves reservations by user ID.
-func (r *ReservationRepository) GetByUserID(ctx context.Context, userID primitive.ObjectID, limit, offset int) ([]*model.Reservation, error) {
-	opts := options.Find()
-	opts.SetLimit(int64(limit))
-	opts.SetSkip(int64(offset))
-	opts.SetSort(bson.D{primitive.E{Key: "created_at", Value: -1}})
-
-	cursor, err := r.collection.Find(ctx, bson.M{"user_id": userID}, opts)
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
-	var reservations []*model.Reservation
-	for cursor.Next(ctx) {
-		var res model.Reservation
-		if err := cursor.Decode(&res); err != nil {
-			return nil, err
-		}
-		reservations = append(reservations, &res)
-	}
-
-	return reservations, cursor.Err()
-}
-
 // GetByRestaurantID retrieves reservations by restaurant ID.
 func (r *ReservationRepository) GetByRestaurantID(ctx context.Context, restaurantID primitive.ObjectID, limit, offset int) ([]*model.Reservation, error) {
 	opts := options.Find()

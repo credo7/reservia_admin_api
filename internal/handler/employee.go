@@ -766,14 +766,15 @@ func (h *EmployeeHandler) ConnectTelegram(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// TODO: Implement Telegram connection logic in auth service
-	// For now, return a mock response
-	response := &model.TelegramConnectionResponse{
-		ConnectionRequestID: "mock_telegram_connection_request_id",
-		TelegramURL:         "https://t.me/mock_admin_bot?start=mock_connection_id",
+	// Use auth service to handle Telegram connection
+	response, err := h.authService.ConnectTelegram(r.Context(), employee.ID)
+	if err != nil {
+		h.logger.Error("Failed to initiate Telegram connection", "employee_id", employee.ID, "error", err)
+		h.writeError(w, http.StatusInternalServerError, "Failed to initiate Telegram connection")
+		return
 	}
 
-	h.logger.Info("Telegram connection requested", "employee_id", employee.ID)
+	h.logger.Info("Telegram connection requested", "employee_id", employee.ID, "request_id", response.ConnectionRequestID)
 	h.writeJSON(w, http.StatusOK, response)
 }
 
@@ -808,14 +809,15 @@ func (h *EmployeeHandler) CheckTelegramConnection(w http.ResponseWriter, r *http
 		return
 	}
 
-	// TODO: Implement Telegram connection status check in auth service
-	// For now, return a mock response
-	response := &model.TelegramConnectionVerifyResponse{
-		IsPending: false,
-		Success:   true,
+	// Use auth service to check Telegram connection status
+	response, err := h.authService.CheckTelegramConnection(r.Context(), requestID, employee.ID)
+	if err != nil {
+		h.logger.Error("Failed to check Telegram connection status", "employee_id", employee.ID, "request_id", requestID, "error", err)
+		h.writeError(w, http.StatusInternalServerError, "Failed to check Telegram connection status")
+		return
 	}
 
-	h.logger.Info("Telegram connection status checked", "employee_id", employee.ID, "request_id", requestID)
+	h.logger.Info("Telegram connection status checked", "employee_id", employee.ID, "request_id", requestID, "is_pending", response.IsPending)
 	h.writeJSON(w, http.StatusOK, response)
 }
 
@@ -841,10 +843,16 @@ func (h *EmployeeHandler) DisconnectTelegram(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// TODO: Implement Telegram disconnection logic
-	// For now, just return the employee data
-	h.logger.Info("Telegram disconnected", "employee_id", employee.ID)
-	h.writeJSON(w, http.StatusOK, employee)
+	// Use auth service to disconnect Telegram
+	updatedEmployee, err := h.authService.DisconnectTelegram(r.Context(), employee.ID)
+	if err != nil {
+		h.logger.Error("Failed to disconnect Telegram", "employee_id", employee.ID, "error", err)
+		h.writeError(w, http.StatusInternalServerError, "Failed to disconnect Telegram")
+		return
+	}
+
+	h.logger.Info("Telegram disconnected successfully", "employee_id", employee.ID)
+	h.writeJSON(w, http.StatusOK, updatedEmployee)
 }
 
 // DisconnectEmail handles DELETE /employees/me/email.

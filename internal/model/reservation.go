@@ -68,7 +68,7 @@ type Reservation struct {
 	CanceledAt   *time.Time `json:"canceled_at,omitempty" bson:"canceled_at,omitempty"`
 
 	// Cancellation information
-	CanceledByUserID   *primitive.ObjectID `json:"canceled_by_user_id,omitempty" bson:"canceled_by_user_id,omitempty"`
+	CanceledByEmployeeID   *primitive.ObjectID `json:"canceled_by_employee_id,omitempty" bson:"canceled_by_employee_id,omitempty"`
 	CancellationReason string              `json:"cancellation_reason" bson:"cancellation_reason"`
 
 	// Administrative fields
