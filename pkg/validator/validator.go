@@ -2,6 +2,7 @@
 package validator
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -29,7 +30,7 @@ func (v *Validator) Struct(s interface{}) error {
 		for _, err := range err.(validator.ValidationErrors) {
 			messages = append(messages, v.getErrorMessage(err))
 		}
-		return fmt.Errorf(strings.Join(messages, ", "))
+		return errors.New(strings.Join(messages, ", "))
 	}
 	return nil
 }
