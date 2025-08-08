@@ -37,7 +37,7 @@ env:
   - name: RABBITMQ_URI
     value: "amqp://user:password@rabbitmq:5672/"
   - name: RABBITMQ_QUEUE_NAME
-    value: "email_tasks"
+    value: "auth_emails"
   - name: TELEGRAM_ADMIN_BOT_USERNAME
     value: "reservia_admin_dev_bot"
 

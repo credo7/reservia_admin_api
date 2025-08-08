@@ -8,16 +8,19 @@ import (
 	"github.com/reservia/api/internal/model"
 	"github.com/reservia/api/internal/service"
 	"github.com/reservia/api/pkg/logger"
+	"github.com/reservia/api/pkg/validator"
 )
 
 type AuthHandler struct {
 	authService *service.AuthService
+	validator   *validator.Validator
 	logger      logger.Logger
 }
 
 func NewAuthHandler(authService *service.AuthService, logger logger.Logger) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
+		validator:   validator.New(),
 		logger:      logger,
 	}
 }
@@ -38,6 +41,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req model.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Validate request data using struct tags
+	if err := h.validator.Struct(req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -76,6 +85,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate request data using struct tags
+	if err := h.validator.Struct(req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	// Call auth service
 	response, err := h.authService.Register(r.Context(), &req)
 	if err != nil {
@@ -108,6 +123,12 @@ func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 	var req model.VerifyEmailRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Validate request data using struct tags
+	if err := h.validator.Struct(req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 

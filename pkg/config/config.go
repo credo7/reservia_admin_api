@@ -90,7 +90,7 @@ func Load() (*Config, error) {
 		},
 		RabbitMQ: RabbitMQConfig{
 			URI:       getEnv("RABBITMQ_URI", "amqp://localhost:5672"),
-			QueueName: getEnv("EMAIL_QUEUE_NAME", "email_queue"),
+			QueueName: getEnv("RABBITMQ_QUEUE_NAME", "auth_emails"),
 		},
 		Telegram: TelegramConfig{
 			AdminBotUsername: getEnv("TELEGRAM_ADMIN_BOT_USERNAME", "reservia_admin_bot"),
