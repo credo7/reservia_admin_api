@@ -124,7 +124,7 @@ func (as *AuthService) Register(ctx context.Context, req *model.RegisterRequest)
 
 	// Send employee registration email via RabbitMQ
 	if as.emailProducer != nil {
-		if err := as.emailProducer.SendEmployeeRegisterEmail(as.queueName, req.Email, req.FullName, "", verificationCode); err != nil {
+		if err := as.emailProducer.SendEmployeeRegisterEmail(as.queueName, req.Email, req.FullName, codeEntity.ID.Hex(), verificationCode); err != nil {
 			as.logger.Error("Failed to send employee registration email", "email", req.Email, "error", err)
 			// Note: We don't return error here as the verification code is saved and user can still verify manually
 		} else {
