@@ -91,13 +91,14 @@ func (s *Server) setupDependencies() {
 	restaurantService := service.NewRestaurantService(restaurantRepo, employeeRepo, cityService, s.logger)
 	authService := service.NewAuthService(authRepo, employeeRepo, emailProducer, s.config.RabbitMQ.QueueName, s.config, s.logger)
 	reservationService := service.NewReservationService(reservationRepo, restaurantRepo, s.logger)
+	restaurantAvailabilityService := service.NewRestaurantAvailabilityService(restaurantRepo, reservationRepo, s.logger)
 
 	// Initialize middleware
 	s.authMiddleware = middleware.NewAuthMiddleware(authService, employeeService, s.logger)
 
 	// Initialize handlers
 	s.employeeHandler = handler.NewEmployeeHandler(employeeService, authService, s.logger)
-	s.restaurantHandler = handler.NewRestaurantHandler(restaurantService, reservationService, authService, s.logger)
+	s.restaurantHandler = handler.NewRestaurantHandler(restaurantService, reservationService, restaurantAvailabilityService, authService, s.logger)
 	s.cityHandler = handler.NewCityHandler(cityService, s.logger)
 	s.devHandler = handler.NewDevHandler()
 	s.metricsHandler = handler.NewMetricsHandler()

@@ -178,3 +178,148 @@ func (r *ReservationRepository) CheckAvailability(ctx context.Context, restauran
 
 	return count == 0, nil
 }
+
+// Enhanced availability methods (matching Python functionality)
+
+// GetActiveReservationsInTimeRange retrieves active reservations that overlap with the given time range
+// (matches Python reservation conflict detection).
+func (r *ReservationRepository) GetActiveReservationsInTimeRange(ctx context.Context, filters model.TableAvailabilityFilters) ([]*model.Reservation, error) {
+	// Build query filter
+	filter := bson.M{
+		"restaurantId": filters.RestaurantID,
+		"start_at":     bson.M{"$lt": filters.EndAt},
+		"end_at":       bson.M{"$gt": filters.StartAt},
+		"status": bson.M{
+			"$in": model.GetActiveReservationStatuses(),
+		},
+	}
+
+	// Add optional filters
+	if !filters.RoomID.IsZero() {
+		filter["room_id"] = filters.RoomID
+	}
+	
+	if !filters.TableID.IsZero() {
+		filter["table_id"] = filters.TableID
+	}
+
+	opts := options.Find()
+	opts.SetSort(bson.D{primitive.E{Key: "start_at", Value: 1}})
+
+	cursor, err := r.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var reservations []*model.Reservation
+	for cursor.Next(ctx) {
+		var res model.Reservation
+		if err := cursor.Decode(&res); err != nil {
+			return nil, err
+		}
+		reservations = append(reservations, &res)
+	}
+
+	return reservations, cursor.Err()
+}
+
+// GetActiveReservationsForTable retrieves active reservations for a specific table in a time range.
+func (r *ReservationRepository) GetActiveReservationsForTable(ctx context.Context, restaurantID, tableID primitive.ObjectID, startAt, endAt time.Time) ([]*model.Reservation, error) {
+	filter := bson.M{
+		"restaurantId": restaurantID,
+		"table_id":     tableID,
+		"start_at":     bson.M{"$lt": endAt},
+		"end_at":       bson.M{"$gt": startAt},
+		"status": bson.M{
+			"$in": model.GetActiveReservationStatuses(),
+		},
+	}
+
+	opts := options.Find()
+	opts.SetSort(bson.D{primitive.E{Key: "start_at", Value: 1}})
+
+	cursor, err := r.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var reservations []*model.Reservation
+	for cursor.Next(ctx) {
+		var res model.Reservation
+		if err := cursor.Decode(&res); err != nil {
+			return nil, err
+		}
+		reservations = append(reservations, &res)
+	}
+
+	return reservations, cursor.Err()
+}
+
+// GetActiveReservationsForRoom retrieves active reservations for all tables in a room within a time range.
+func (r *ReservationRepository) GetActiveReservationsForRoom(ctx context.Context, restaurantID, roomID primitive.ObjectID, startAt, endAt time.Time) ([]*model.Reservation, error) {
+	filter := bson.M{
+		"restaurantId": restaurantID,
+		"room_id":      roomID,
+		"start_at":     bson.M{"$lt": endAt},
+		"end_at":       bson.M{"$gt": startAt},
+		"status": bson.M{
+			"$in": model.GetActiveReservationStatuses(),
+		},
+	}
+
+	opts := options.Find()
+	opts.SetSort(bson.D{primitive.E{Key: "start_at", Value: 1}})
+
+	cursor, err := r.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var reservations []*model.Reservation
+	for cursor.Next(ctx) {
+		var res model.Reservation
+		if err := cursor.Decode(&res); err != nil {
+			return nil, err
+		}
+		reservations = append(reservations, &res)
+	}
+
+	return reservations, cursor.Err()
+}
+
+// GetActiveReservationsForMultipleTables retrieves active reservations for multiple tables in a time range
+// (matches Python multi-table query optimization).
+func (r *ReservationRepository) GetActiveReservationsForMultipleTables(ctx context.Context, restaurantID primitive.ObjectID, tableIDs []primitive.ObjectID, startAt, endAt time.Time) ([]*model.Reservation, error) {
+	filter := bson.M{
+		"restaurantId": restaurantID,
+		"table_id":     bson.M{"$in": tableIDs},
+		"start_at":     bson.M{"$lt": endAt},
+		"end_at":       bson.M{"$gt": startAt},
+		"status": bson.M{
+			"$in": model.GetActiveReservationStatuses(),
+		},
+	}
+
+	opts := options.Find()
+	opts.SetSort(bson.D{primitive.E{Key: "table_id", Value: 1}, primitive.E{Key: "start_at", Value: 1}})
+
+	cursor, err := r.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var reservations []*model.Reservation
+	for cursor.Next(ctx) {
+		var res model.Reservation
+		if err := cursor.Decode(&res); err != nil {
+			return nil, err
+		}
+		reservations = append(reservations, &res)
+	}
+
+	return reservations, cursor.Err()
+}

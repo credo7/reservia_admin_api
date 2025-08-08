@@ -3663,7 +3663,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Restaurant availability",
                         "schema": {
-                            "$ref": "#/definitions/model.RestaurantAvailabilityResponse"
+                            "$ref": "#/definitions/model.RestaurantAvailability"
                         }
                     },
                     "400": {
@@ -3876,14 +3876,20 @@ const docTemplate = `{
                     "maxLength": 100,
                     "minLength": 1
                 },
+                "regularSchedule": {
+                    "$ref": "#/definitions/model.WeekSchedule"
+                },
+                "specialDateSchedules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SpecialDateSchedule"
+                    }
+                },
                 "tables": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.Table"
                     }
-                },
-                "workHours": {
-                    "$ref": "#/definitions/model.WorkHours"
                 }
             }
         },
@@ -3906,18 +3912,19 @@ const docTemplate = `{
                 }
             }
         },
-        "model.DayHours": {
+        "model.DayAvailability": {
             "type": "object",
             "properties": {
-                "closeTime": {
-                    "description": "HH:MM format",
+                "date": {
+                    "description": "YYYY-MM-DD format",
                     "type": "string"
                 },
-                "isOpen": {
+                "isActive": {
+                    "description": "Whether bookings are available on this day",
                     "type": "boolean"
                 },
-                "openTime": {
-                    "description": "HH:MM format",
+                "weekday": {
+                    "description": "\"Monday\", \"Tuesday\", etc.",
                     "type": "string"
                 }
             }
@@ -4338,6 +4345,23 @@ const docTemplate = `{
                 }
             }
         },
+        "model.ReservationSlot": {
+            "type": "object",
+            "properties": {
+                "endAt": {
+                    "type": "string"
+                },
+                "roomId": {
+                    "type": "string"
+                },
+                "startAt": {
+                    "type": "string"
+                },
+                "tableId": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Restaurant": {
             "type": "object",
             "properties": {
@@ -4406,27 +4430,51 @@ const docTemplate = `{
                 }
             }
         },
-        "model.RestaurantAvailabilityResponse": {
+        "model.RestaurantAvailability": {
             "type": "object",
             "properties": {
-                "date": {
+                "address": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "selectedDate": {
                     "description": "YYYY-MM-DD format",
                     "type": "string"
                 },
-                "isAvailable": {
-                    "type": "boolean"
-                },
-                "restaurantId": {
-                    "type": "string"
-                },
-                "rooms": {
+                "showDates": {
+                    "description": "Available booking dates",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.RoomAvailability"
+                        "$ref": "#/definitions/model.DayAvailability"
                     }
                 },
-                "urlName": {
-                    "type": "string"
+                "slotsByTableId": {
+                    "description": "Available slots per table",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/model.ReservationSlot"
+                        }
+                    }
+                },
+                "startTimeToMaxDurationMap": {
+                    "description": "Time slots → available durations",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },
@@ -4497,32 +4545,20 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "regularSchedule": {
+                    "$ref": "#/definitions/model.WeekSchedule"
+                },
+                "specialDateSchedules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SpecialDateSchedule"
+                    }
+                },
                 "tables": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.Table"
                     }
-                },
-                "workHours": {
-                    "$ref": "#/definitions/model.WorkHours"
-                }
-            }
-        },
-        "model.RoomAvailability": {
-            "type": "object",
-            "properties": {
-                "isAvailable": {
-                    "type": "boolean"
-                },
-                "reason": {
-                    "description": "closed, no_tables, etc.",
-                    "type": "string"
-                },
-                "roomId": {
-                    "type": "string"
-                },
-                "roomName": {
-                    "type": "string"
                 }
             }
         },
@@ -4570,6 +4606,34 @@ const docTemplate = `{
                 },
                 "reservationReminderMinutes": {
                     "type": "integer"
+                }
+            }
+        },
+        "model.SpecialDateSchedule": {
+            "type": "object",
+            "properties": {
+                "dates": {
+                    "description": "YYYY-MM-DD format",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "e.g., \"New Year Special Hours\"",
+                    "type": "string"
+                },
+                "timeRanges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.TimeRange"
+                    }
                 }
             }
         },
@@ -4657,6 +4721,19 @@ const docTemplate = `{
                 },
                 "success": {
                     "type": "boolean"
+                }
+            }
+        },
+        "model.TimeRange": {
+            "type": "object",
+            "properties": {
+                "endTime": {
+                    "description": "HH:MM format",
+                    "type": "string"
+                },
+                "startTime": {
+                    "description": "HH:MM format",
+                    "type": "string"
                 }
             }
         },
@@ -4783,14 +4860,20 @@ const docTemplate = `{
                     "maxLength": 100,
                     "minLength": 1
                 },
+                "regularSchedule": {
+                    "$ref": "#/definitions/model.WeekSchedule"
+                },
+                "specialDateSchedules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SpecialDateSchedule"
+                    }
+                },
                 "tables": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.Table"
                     }
-                },
-                "workHours": {
-                    "$ref": "#/definitions/model.WorkHours"
                 }
             }
         },
@@ -4825,29 +4908,43 @@ const docTemplate = `{
                 }
             }
         },
-        "model.WorkHours": {
+        "model.WeekDaySchedule": {
+            "type": "object",
+            "properties": {
+                "isActive": {
+                    "type": "boolean"
+                },
+                "timeRanges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.TimeRange"
+                    }
+                }
+            }
+        },
+        "model.WeekSchedule": {
             "type": "object",
             "properties": {
                 "friday": {
-                    "$ref": "#/definitions/model.DayHours"
+                    "$ref": "#/definitions/model.WeekDaySchedule"
                 },
                 "monday": {
-                    "$ref": "#/definitions/model.DayHours"
+                    "$ref": "#/definitions/model.WeekDaySchedule"
                 },
                 "saturday": {
-                    "$ref": "#/definitions/model.DayHours"
+                    "$ref": "#/definitions/model.WeekDaySchedule"
                 },
                 "sunday": {
-                    "$ref": "#/definitions/model.DayHours"
+                    "$ref": "#/definitions/model.WeekDaySchedule"
                 },
                 "thursday": {
-                    "$ref": "#/definitions/model.DayHours"
+                    "$ref": "#/definitions/model.WeekDaySchedule"
                 },
                 "tuesday": {
-                    "$ref": "#/definitions/model.DayHours"
+                    "$ref": "#/definitions/model.WeekDaySchedule"
                 },
                 "wednesday": {
-                    "$ref": "#/definitions/model.DayHours"
+                    "$ref": "#/definitions/model.WeekDaySchedule"
                 }
             }
         }

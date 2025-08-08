@@ -9,6 +9,7 @@ import (
 	"github.com/reservia/api/internal/service"
 	"net/http"
 	"strings"
+	"time"
 
 	chi "github.com/go-chi/chi/v5"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -19,21 +20,23 @@ import (
 
 // RestaurantHandler handles restaurant-related HTTP requests.
 type RestaurantHandler struct {
-	restaurantService  *service.RestaurantService
-	reservationService *service.ReservationService
-	authService        *service.AuthService
-	validator          *validator.Validator
-	logger             logger.Logger
+	restaurantService             *service.RestaurantService
+	reservationService            *service.ReservationService
+	restaurantAvailabilityService *service.RestaurantAvailabilityService
+	authService                   *service.AuthService
+	validator                     *validator.Validator
+	logger                        logger.Logger
 }
 
 // NewRestaurantHandler creates a new restaurant handler.
-func NewRestaurantHandler(restaurantService *service.RestaurantService, reservationService *service.ReservationService, authService *service.AuthService, logger logger.Logger) *RestaurantHandler {
+func NewRestaurantHandler(restaurantService *service.RestaurantService, reservationService *service.ReservationService, restaurantAvailabilityService *service.RestaurantAvailabilityService, authService *service.AuthService, logger logger.Logger) *RestaurantHandler {
 	return &RestaurantHandler{
-		restaurantService:  restaurantService,
-		reservationService: reservationService,
-		authService:        authService,
-		validator:          validator.New(),
-		logger:             logger,
+		restaurantService:             restaurantService,
+		reservationService:            reservationService,
+		restaurantAvailabilityService: restaurantAvailabilityService,
+		authService:                   authService,
+		validator:                     validator.New(),
+		logger:                        logger,
 	}
 }
 
@@ -475,7 +478,7 @@ func (h *RestaurantHandler) DisableRestaurant(w http.ResponseWriter, r *http.Req
 //	@Produce		json
 //	@Param			urlNameOrRestId	path		string									true	"Restaurant URL name or ID"
 //	@Param			date			query		string									false	"Date in YYYY-MM-DD format (default: today)"
-//	@Success		200				{object}	model.RestaurantAvailabilityResponse	"Restaurant availability"
+//	@Success		200				{object}	model.RestaurantAvailability	"Restaurant availability"
 //	@Failure		400				{object}	map[string]string						"Invalid date format"
 //	@Failure		404				{object}	map[string]string						"Restaurant not found"
 //	@Failure		500				{object}	map[string]string						"Internal server error"
@@ -488,11 +491,24 @@ func (h *RestaurantHandler) GetRestaurantAvailability(w http.ResponseWriter, r *
 		return
 	}
 
-	date := r.URL.Query().Get("date")
+	dateStr := r.URL.Query().Get("date")
+	var chosenDate time.Time
+	var err error
 
-	availability, err := h.restaurantService.GetRestaurantAvailability(r.Context(), urlNameOrID, date)
+	if dateStr == "" {
+		// Default to today
+		chosenDate = time.Now().UTC()
+	} else {
+		chosenDate, err = time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			h.writeError(w, http.StatusBadRequest, "Invalid date format. Use YYYY-MM-DD")
+			return
+		}
+	}
+
+	availability, err := h.restaurantAvailabilityService.GetAvailability(r.Context(), urlNameOrID, chosenDate)
 	if err != nil {
-		h.logger.Error("Failed to get restaurant availability", "url_name_or_id", urlNameOrID, "date", date, "error", err)
+		h.logger.Error("Failed to get restaurant availability", "url_name_or_id", urlNameOrID, "date", chosenDate.Format("2006-01-02"), "error", err)
 		h.writeError(w, http.StatusNotFound, "Restaurant not found or invalid date")
 		return
 	}

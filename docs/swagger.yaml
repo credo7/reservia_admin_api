@@ -125,12 +125,16 @@ definitions:
         maxLength: 100
         minLength: 1
         type: string
+      regularSchedule:
+        $ref: '#/definitions/model.WeekSchedule'
+      specialDateSchedules:
+        items:
+          $ref: '#/definitions/model.SpecialDateSchedule'
+        type: array
       tables:
         items:
           $ref: '#/definitions/model.Table'
         type: array
-      workHours:
-        $ref: '#/definitions/model.WorkHours'
     required:
     - name
     type: object
@@ -148,15 +152,16 @@ definitions:
     - key
     - name
     type: object
-  model.DayHours:
+  model.DayAvailability:
     properties:
-      closeTime:
-        description: HH:MM format
+      date:
+        description: YYYY-MM-DD format
         type: string
-      isOpen:
+      isActive:
+        description: Whether bookings are available on this day
         type: boolean
-      openTime:
-        description: HH:MM format
+      weekday:
+        description: '"Monday", "Tuesday", etc.'
         type: string
     type: object
   model.Element:
@@ -458,6 +463,17 @@ definitions:
       user_notes:
         type: string
     type: object
+  model.ReservationSlot:
+    properties:
+      endAt:
+        type: string
+      roomId:
+        type: string
+      startAt:
+        type: string
+      tableId:
+        type: string
+    type: object
   model.Restaurant:
     properties:
       address:
@@ -503,21 +519,38 @@ definitions:
       utcOffset:
         type: integer
     type: object
-  model.RestaurantAvailabilityResponse:
+  model.RestaurantAvailability:
     properties:
-      date:
+      address:
+        type: string
+      city:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      selectedDate:
         description: YYYY-MM-DD format
         type: string
-      isAvailable:
-        type: boolean
-      restaurantId:
-        type: string
-      rooms:
+      showDates:
+        description: Available booking dates
         items:
-          $ref: '#/definitions/model.RoomAvailability'
+          $ref: '#/definitions/model.DayAvailability'
         type: array
-      urlName:
-        type: string
+      slotsByTableId:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/model.ReservationSlot'
+          type: array
+        description: Available slots per table
+        type: object
+      startTimeToMaxDurationMap:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: Time slots → available durations
+        type: object
     type: object
   model.RestaurantSummary:
     properties:
@@ -565,24 +598,16 @@ definitions:
         type: boolean
       name:
         type: string
+      regularSchedule:
+        $ref: '#/definitions/model.WeekSchedule'
+      specialDateSchedules:
+        items:
+          $ref: '#/definitions/model.SpecialDateSchedule'
+        type: array
       tables:
         items:
           $ref: '#/definitions/model.Table'
         type: array
-      workHours:
-        $ref: '#/definitions/model.WorkHours'
-    type: object
-  model.RoomAvailability:
-    properties:
-      isAvailable:
-        type: boolean
-      reason:
-        description: closed, no_tables, etc.
-        type: string
-      roomId:
-        type: string
-      roomName:
-        type: string
     type: object
   model.SaveElementsRequest:
     properties:
@@ -615,6 +640,25 @@ definitions:
         type: integer
       reservationReminderMinutes:
         type: integer
+    type: object
+  model.SpecialDateSchedule:
+    properties:
+      dates:
+        description: YYYY-MM-DD format
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        description: e.g., "New Year Special Hours"
+        type: string
+      timeRanges:
+        items:
+          $ref: '#/definitions/model.TimeRange'
+        type: array
     type: object
   model.Status:
     enum:
@@ -676,6 +720,15 @@ definitions:
         type: boolean
       success:
         type: boolean
+    type: object
+  model.TimeRange:
+    properties:
+      endTime:
+        description: HH:MM format
+        type: string
+      startTime:
+        description: HH:MM format
+        type: string
     type: object
   model.UpdateElementRequest:
     properties:
@@ -759,12 +812,16 @@ definitions:
         maxLength: 100
         minLength: 1
         type: string
+      regularSchedule:
+        $ref: '#/definitions/model.WeekSchedule'
+      specialDateSchedules:
+        items:
+          $ref: '#/definitions/model.SpecialDateSchedule'
+        type: array
       tables:
         items:
           $ref: '#/definitions/model.Table'
         type: array
-      workHours:
-        $ref: '#/definitions/model.WorkHours'
     type: object
   model.UrlNameAvailabilityResponse:
     properties:
@@ -786,22 +843,31 @@ definitions:
       accessToken:
         type: string
     type: object
-  model.WorkHours:
+  model.WeekDaySchedule:
+    properties:
+      isActive:
+        type: boolean
+      timeRanges:
+        items:
+          $ref: '#/definitions/model.TimeRange'
+        type: array
+    type: object
+  model.WeekSchedule:
     properties:
       friday:
-        $ref: '#/definitions/model.DayHours'
+        $ref: '#/definitions/model.WeekDaySchedule'
       monday:
-        $ref: '#/definitions/model.DayHours'
+        $ref: '#/definitions/model.WeekDaySchedule'
       saturday:
-        $ref: '#/definitions/model.DayHours'
+        $ref: '#/definitions/model.WeekDaySchedule'
       sunday:
-        $ref: '#/definitions/model.DayHours'
+        $ref: '#/definitions/model.WeekDaySchedule'
       thursday:
-        $ref: '#/definitions/model.DayHours'
+        $ref: '#/definitions/model.WeekDaySchedule'
       tuesday:
-        $ref: '#/definitions/model.DayHours'
+        $ref: '#/definitions/model.WeekDaySchedule'
       wednesday:
-        $ref: '#/definitions/model.DayHours'
+        $ref: '#/definitions/model.WeekDaySchedule'
     type: object
 host: localhost:8080
 info:
@@ -3143,7 +3209,7 @@ paths:
         "200":
           description: Restaurant availability
           schema:
-            $ref: '#/definitions/model.RestaurantAvailabilityResponse'
+            $ref: '#/definitions/model.RestaurantAvailability'
         "400":
           description: Invalid date format
           schema:

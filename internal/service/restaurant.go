@@ -394,7 +394,7 @@ func (rs *RestaurantService) DisableRestaurant(ctx context.Context, id primitive
 }
 
 // GetRestaurantAvailability gets availability information for a restaurant on a specific date.
-func (rs *RestaurantService) GetRestaurantAvailability(ctx context.Context, urlNameOrID string, date string) (*model.RestaurantAvailabilityResponse, error) {
+func (rs *RestaurantService) GetRestaurantAvailability(ctx context.Context, urlNameOrID string, date string) (*model.RestaurantAvailabilityBasicResponse, error) {
 	// Get restaurant
 	restaurant, err := rs.GetRestaurantByURLNameOrID(ctx, urlNameOrID)
 	if err != nil {
@@ -430,10 +430,10 @@ func (rs *RestaurantService) GetRestaurantAvailability(ctx context.Context, urlN
 			// Check if room is closed on this specific date
 			roomAvail.IsAvailable = false
 			roomAvail.Reason = "closed_on_date"
-		} else if !room.IsOpenOnDay(parsedDate.Weekday()) {
-			// Check if room is open on this day of week
+		} else if !room.IsOpenOnDate(parsedDate) {
+			// Check if room is open on this date (using enhanced schedule)
 			roomAvail.IsAvailable = false
-			roomAvail.Reason = "closed_on_weekday"
+			roomAvail.Reason = "closed_on_date"
 		} else if len(room.GetActiveTables()) == 0 {
 			// Check if room has any active tables
 			roomAvail.IsAvailable = false
@@ -447,7 +447,7 @@ func (rs *RestaurantService) GetRestaurantAvailability(ctx context.Context, urlN
 		roomAvailabilities = append(roomAvailabilities, roomAvail)
 	}
 
-	return &model.RestaurantAvailabilityResponse{
+	return &model.RestaurantAvailabilityBasicResponse{
 		RestaurantID: restaurant.ID,
 		URLName:      restaurant.URLName,
 		Date:         date,
@@ -575,7 +575,6 @@ func (rs *RestaurantService) AddRoom(ctx context.Context, restaurantID primitive
 		Name:        req.Name,
 		IsEnabled:   isEnabled,
 		Tables:      tables,
-		WorkHours:   req.WorkHours,
 		ClosedDates: closedDates,
 	}
 
@@ -635,8 +634,11 @@ func (rs *RestaurantService) UpdateRoom(ctx context.Context, restaurantID primit
 	if req.Tables != nil {
 		room.Tables = req.Tables
 	}
-	if req.WorkHours != nil {
-		room.WorkHours = *req.WorkHours
+	if req.RegularSchedule != nil {
+		room.RegularSchedule = *req.RegularSchedule
+	}
+	if req.SpecialDateSchedules != nil {
+		room.SpecialDateSchedules = req.SpecialDateSchedules
 	}
 	if req.ClosedDates != nil {
 		room.ClosedDates = req.ClosedDates

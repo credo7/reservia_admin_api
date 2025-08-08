@@ -3,6 +3,7 @@ package repository
 
 import (
 	"context"
+	"time"
 	"github.com/reservia/api/internal/model"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -84,6 +85,20 @@ type ReservationRepository interface {
 
 	// CheckAvailability checks if a time slot is available
 	CheckAvailability(ctx context.Context, restaurantID, roomID primitive.ObjectID, startTime, endTime string) (bool, error)
+
+	// Enhanced availability methods (matching Python functionality)
+
+	// GetActiveReservationsInTimeRange retrieves active reservations (PENDING, CONFIRMED, ARRIVED) that overlap with the given time range
+	GetActiveReservationsInTimeRange(ctx context.Context, filters model.TableAvailabilityFilters) ([]*model.Reservation, error)
+
+	// GetActiveReservationsForTable retrieves active reservations for a specific table in a time range  
+	GetActiveReservationsForTable(ctx context.Context, restaurantID, tableID primitive.ObjectID, startAt, endAt time.Time) ([]*model.Reservation, error)
+
+	// GetActiveReservationsForRoom retrieves active reservations for all tables in a room within a time range
+	GetActiveReservationsForRoom(ctx context.Context, restaurantID, roomID primitive.ObjectID, startAt, endAt time.Time) ([]*model.Reservation, error)
+
+	// GetActiveReservationsForMultipleTables retrieves active reservations for multiple tables in a time range
+	GetActiveReservationsForMultipleTables(ctx context.Context, restaurantID primitive.ObjectID, tableIDs []primitive.ObjectID, startAt, endAt time.Time) ([]*model.Reservation, error)
 }
 
 // CityRepository defines the interface for city data access.

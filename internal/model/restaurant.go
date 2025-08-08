@@ -2,7 +2,9 @@
 package model
 
 import (
+	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -47,13 +49,14 @@ type Settings struct {
 
 // Room represents a room within a restaurant.
 type Room struct {
-	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Name        string             `json:"name" bson:"name"`
-	IsEnabled   bool               `json:"isEnabled" bson:"is_enabled"`
-	Tables      []Table            `json:"tables" bson:"tables"`
-	Elements    []Element          `json:"elements" bson:"elements"`
-	WorkHours   WorkHours          `json:"workHours" bson:"work_hours"`
-	ClosedDates []string           `json:"closedDates" bson:"closed_dates"` // YYYY-MM-DD format
+	ID                   primitive.ObjectID    `json:"id" bson:"_id,omitempty"`
+	Name                 string                `json:"name" bson:"name"`
+	IsEnabled            bool                  `json:"isEnabled" bson:"is_enabled"`
+	Tables               []Table               `json:"tables" bson:"tables"`
+	Elements             []Element             `json:"elements" bson:"elements"`
+	RegularSchedule      WeekSchedule          `json:"regularSchedule" bson:"regular_schedule"`
+	SpecialDateSchedules []SpecialDateSchedule `json:"specialDateSchedules" bson:"special_date_schedules"`
+	ClosedDates          []string              `json:"closedDates" bson:"closed_dates"` // YYYY-MM-DD format
 }
 
 // Table represents a table within a room.
@@ -64,22 +67,39 @@ type Table struct {
 	IsEnabled bool               `json:"isEnabled" bson:"is_enabled"`
 }
 
-// WorkHours represents working hours for a room.
-type WorkHours struct {
-	Monday    DayHours `json:"monday" bson:"monday"`
-	Tuesday   DayHours `json:"tuesday" bson:"tuesday"`
-	Wednesday DayHours `json:"wednesday" bson:"wednesday"`
-	Thursday  DayHours `json:"thursday" bson:"thursday"`
-	Friday    DayHours `json:"friday" bson:"friday"`
-	Saturday  DayHours `json:"saturday" bson:"saturday"`
-	Sunday    DayHours `json:"sunday" bson:"sunday"`
+
+// Enhanced Schedule Models (matches Python implementation)
+
+// WeekSchedule represents a weekly schedule with support for multiple time ranges per day.
+type WeekSchedule struct {
+	Monday    WeekDaySchedule `json:"monday" bson:"monday"`
+	Tuesday   WeekDaySchedule `json:"tuesday" bson:"tuesday"`
+	Wednesday WeekDaySchedule `json:"wednesday" bson:"wednesday"`
+	Thursday  WeekDaySchedule `json:"thursday" bson:"thursday"`
+	Friday    WeekDaySchedule `json:"friday" bson:"friday"`
+	Saturday  WeekDaySchedule `json:"saturday" bson:"saturday"`
+	Sunday    WeekDaySchedule `json:"sunday" bson:"sunday"`
 }
 
-// DayHours represents opening hours for a specific day.
-type DayHours struct {
-	IsOpen    bool   `json:"isOpen" bson:"is_open"`
-	OpenTime  string `json:"openTime" bson:"open_time"`   // HH:MM format
-	CloseTime string `json:"closeTime" bson:"close_time"` // HH:MM format
+// WeekDaySchedule represents a single day's schedule with multiple time ranges.
+type WeekDaySchedule struct {
+	IsActive   bool        `json:"isActive" bson:"is_active"`
+	TimeRanges []TimeRange `json:"timeRanges" bson:"time_ranges"`
+}
+
+// TimeRange represents a single time period within a day.
+type TimeRange struct {
+	StartTime string `json:"startTime" bson:"start_time"` // HH:MM format
+	EndTime   string `json:"endTime" bson:"end_time"`     // HH:MM format
+}
+
+// SpecialDateSchedule represents override schedules for specific dates.
+type SpecialDateSchedule struct {
+	ID         primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Name       string             `json:"name" bson:"name"`                   // e.g., "New Year Special Hours"
+	Dates      []string           `json:"dates" bson:"dates"`                 // YYYY-MM-DD format
+	TimeRanges []TimeRange        `json:"timeRanges" bson:"time_ranges"`
+	IsActive   bool               `json:"isActive" bson:"is_active"`
 }
 
 // CreateRestaurantRequest represents a request to create a new restaurant.
@@ -185,27 +205,6 @@ func (room *Room) GetTotalCapacity() int {
 	return total
 }
 
-// IsOpenOnDay checks if the room is open on a specific day.
-func (room *Room) IsOpenOnDay(day time.Weekday) bool {
-	var dayHours DayHours
-	switch day {
-	case time.Monday:
-		dayHours = room.WorkHours.Monday
-	case time.Tuesday:
-		dayHours = room.WorkHours.Tuesday
-	case time.Wednesday:
-		dayHours = room.WorkHours.Wednesday
-	case time.Thursday:
-		dayHours = room.WorkHours.Thursday
-	case time.Friday:
-		dayHours = room.WorkHours.Friday
-	case time.Saturday:
-		dayHours = room.WorkHours.Saturday
-	case time.Sunday:
-		dayHours = room.WorkHours.Sunday
-	}
-	return dayHours.IsOpen
-}
 
 // IsClosedOnDate checks if the room is closed on a specific date.
 func (room *Room) IsClosedOnDate(date string) bool {
@@ -215,6 +214,243 @@ func (room *Room) IsClosedOnDate(date string) bool {
 		}
 	}
 	return false
+}
+
+// Enhanced Schedule Methods (matching Python implementation)
+
+// IsOpenOnDate checks if the room is open on a specific date using enhanced schedule.
+func (room *Room) IsOpenOnDate(checkDate time.Time) bool {
+	if !room.IsEnabled {
+		return false
+	}
+
+	dateStr := checkDate.Format("2006-01-02")
+
+	// Check if room is closed on this date
+	if room.IsClosedOnDate(dateStr) {
+		return false
+	}
+
+	// Check for overnight shifts from previous day
+	prevDate := checkDate.AddDate(0, 0, -1)
+	if room.HasOvernightShiftIntoDate(prevDate, checkDate) {
+		return true
+	}
+
+	// Check regular schedule for this date
+	return room.HasWorkingHoursOnDate(checkDate)
+}
+
+// GetActiveTimeRangesForDate returns active time ranges for a specific date with priority system.
+func (room *Room) GetActiveTimeRangesForDate(checkDate time.Time) []TimeRange {
+	dateStr := checkDate.Format("2006-01-02")
+
+	// 1. First check special schedules (highest priority)
+	for _, special := range room.SpecialDateSchedules {
+		if !special.IsActive {
+			continue
+		}
+		
+		for _, specialDate := range special.Dates {
+			if specialDate == dateStr {
+				return special.TimeRanges
+			}
+		}
+	}
+
+	// 2. Fall back to regular weekly schedule
+	daySchedule := room.GetDayScheduleForDate(checkDate)
+	if daySchedule.IsActive {
+		return daySchedule.TimeRanges
+	}
+
+	return []TimeRange{}
+}
+
+// GetDayScheduleForDate gets the regular schedule for a specific weekday.
+func (room *Room) GetDayScheduleForDate(checkDate time.Time) WeekDaySchedule {
+	switch checkDate.Weekday() {
+	case time.Monday:
+		return room.RegularSchedule.Monday
+	case time.Tuesday:
+		return room.RegularSchedule.Tuesday
+	case time.Wednesday:
+		return room.RegularSchedule.Wednesday
+	case time.Thursday:
+		return room.RegularSchedule.Thursday
+	case time.Friday:
+		return room.RegularSchedule.Friday
+	case time.Saturday:
+		return room.RegularSchedule.Saturday
+	case time.Sunday:
+		return room.RegularSchedule.Sunday
+	default:
+		return WeekDaySchedule{}
+	}
+}
+
+// HasWorkingHoursOnDate checks if room has working hours on a specific date.
+func (room *Room) HasWorkingHoursOnDate(checkDate time.Time) bool {
+	timeRanges := room.GetActiveTimeRangesForDate(checkDate)
+	return len(timeRanges) > 0
+}
+
+// HasOvernightShiftIntoDate checks if there's an overnight shift from previous day extending into current day.
+func (room *Room) HasOvernightShiftIntoDate(dayBefore, currentDay time.Time) bool {
+	timeRanges := room.GetActiveTimeRangesForDate(dayBefore)
+
+	for _, tr := range timeRanges {
+		startTime, err := time.Parse("15:04", tr.StartTime)
+		if err != nil {
+			continue
+		}
+		
+		endTime, err := time.Parse("15:04", tr.EndTime)
+		if err != nil {
+			continue
+		}
+
+		// If end <= start, it's an overnight shift
+		if endTime.Hour() < startTime.Hour() || (endTime.Hour() == startTime.Hour() && endTime.Minute() <= startTime.Minute()) {
+			// This is an overnight shift
+			endDateTime := time.Date(currentDay.Year(), currentDay.Month(), currentDay.Day(), endTime.Hour(), endTime.Minute(), 0, 0, currentDay.Location())
+
+			// Check if it extends into current day
+			currentDayStart := time.Date(currentDay.Year(), currentDay.Month(), currentDay.Day(), 0, 0, 0, 0, currentDay.Location())
+			if endDateTime.After(currentDayStart) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// IsWithinWorkingHours checks if a specific time falls within room's working hours.
+func (room *Room) IsWithinWorkingHours(checkDateTime time.Time) bool {
+	if !room.IsEnabled {
+		return false
+	}
+
+	dateStr := checkDateTime.Format("2006-01-02")
+	timeStr := checkDateTime.Format("15:04")
+
+	// Check if room is closed on this date
+	if room.IsClosedOnDate(dateStr) {
+		return false
+	}
+
+	// Get active time ranges for this date
+	timeRanges := room.GetActiveTimeRangesForDate(checkDateTime)
+
+	for _, tr := range timeRanges {
+		startTime, err := time.Parse("15:04", tr.StartTime)
+		if err != nil {
+			continue
+		}
+		
+		endTime, err := time.Parse("15:04", tr.EndTime)
+		if err != nil {
+			continue
+		}
+
+		checkTime, err := time.Parse("15:04", timeStr)
+		if err != nil {
+			continue
+		}
+
+		// Handle normal time range (within same day)
+		if endTime.After(startTime) {
+			if (checkTime.Equal(startTime) || checkTime.After(startTime)) && checkTime.Before(endTime) {
+				return true
+			}
+		} else {
+			// Handle overnight shift (spans midnight)
+			if checkTime.Equal(startTime) || checkTime.After(startTime) {
+				return true
+			}
+			if checkTime.Before(endTime) {
+				return true
+			}
+		}
+	}
+
+	// Check if current time is within overnight shift from previous day
+	prevDay := checkDateTime.AddDate(0, 0, -1)
+	prevTimeRanges := room.GetActiveTimeRangesForDate(prevDay)
+
+	for _, tr := range prevTimeRanges {
+		startTime, err := time.Parse("15:04", tr.StartTime)
+		if err != nil {
+			continue
+		}
+		
+		endTime, err := time.Parse("15:04", tr.EndTime)
+		if err != nil {
+			continue
+		}
+
+		checkTime, err := time.Parse("15:04", timeStr)
+		if err != nil {
+			continue
+		}
+
+		// Check if this is an overnight shift that extends into current day
+		if endTime.Hour() < startTime.Hour() || (endTime.Hour() == startTime.Hour() && endTime.Minute() <= startTime.Minute()) {
+			if checkTime.Before(endTime) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// GetNextWorkingPeriod returns the next working period for the room starting from the given time.
+func (room *Room) GetNextWorkingPeriod(fromDateTime time.Time) (time.Time, time.Time, bool) {
+	if !room.IsEnabled {
+		return time.Time{}, time.Time{}, false
+	}
+
+	// Check current day and next 7 days
+	for i := 0; i < 7; i++ {
+		checkDate := fromDateTime.AddDate(0, 0, i)
+		
+		if room.IsClosedOnDate(checkDate.Format("2006-01-02")) {
+			continue
+		}
+
+		timeRanges := room.GetActiveTimeRangesForDate(checkDate)
+		
+		for _, tr := range timeRanges {
+			startTime, err := time.Parse("15:04", tr.StartTime)
+			if err != nil {
+				continue
+			}
+			
+			endTime, err := time.Parse("15:04", tr.EndTime)
+			if err != nil {
+				continue
+			}
+
+			startDateTime := time.Date(checkDate.Year(), checkDate.Month(), checkDate.Day(), startTime.Hour(), startTime.Minute(), 0, 0, checkDate.Location())
+			var endDateTime time.Time
+
+			// Handle overnight shifts
+			if endTime.Hour() < startTime.Hour() || (endTime.Hour() == startTime.Hour() && endTime.Minute() <= startTime.Minute()) {
+				endDateTime = time.Date(checkDate.Year(), checkDate.Month(), checkDate.Day()+1, endTime.Hour(), endTime.Minute(), 0, 0, checkDate.Location())
+			} else {
+				endDateTime = time.Date(checkDate.Year(), checkDate.Month(), checkDate.Day(), endTime.Hour(), endTime.Minute(), 0, 0, checkDate.Location())
+			}
+
+			// If this period is in the future, return it
+			if startDateTime.After(fromDateTime) || startDateTime.Equal(fromDateTime) {
+				return startDateTime, endDateTime, true
+			}
+		}
+	}
+
+	return time.Time{}, time.Time{}, false
 }
 
 // Additional models for new endpoints
@@ -254,8 +490,8 @@ func (r *Restaurant) ToMiniResponse() *RestaurantMiniResponse {
 	}
 }
 
-// RestaurantAvailabilityResponse represents restaurant availability for a specific date.
-type RestaurantAvailabilityResponse struct {
+// RestaurantAvailabilityBasicResponse represents basic restaurant availability for a specific date.
+type RestaurantAvailabilityBasicResponse struct {
 	RestaurantID primitive.ObjectID `json:"restaurantId"`
 	URLName      string             `json:"urlName"`
 	Date         string             `json:"date"` // YYYY-MM-DD format
@@ -286,20 +522,22 @@ type CreateSubURLRequest struct {
 
 // CreateRoomRequest represents a request to create a new room.
 type CreateRoomRequest struct {
-	Name        string    `json:"name" validate:"required,min=1,max=100"`
-	IsEnabled   *bool     `json:"isEnabled,omitempty"`
-	Tables      []Table   `json:"tables,omitempty"`
-	WorkHours   WorkHours `json:"workHours"`
-	ClosedDates []string  `json:"closedDates,omitempty"`
+	Name                 string                `json:"name" validate:"required,min=1,max=100"`
+	IsEnabled            *bool                 `json:"isEnabled,omitempty"`
+	Tables               []Table               `json:"tables,omitempty"`
+	RegularSchedule      *WeekSchedule         `json:"regularSchedule,omitempty"`
+	SpecialDateSchedules []SpecialDateSchedule `json:"specialDateSchedules,omitempty"`
+	ClosedDates          []string              `json:"closedDates,omitempty"`
 }
 
 // UpdateRoomRequest represents a request to update a room.
 type UpdateRoomRequest struct {
-	Name        *string    `json:"name,omitempty" validate:"omitempty,min=1,max=100"`
-	IsEnabled   *bool      `json:"isEnabled,omitempty"`
-	Tables      []Table    `json:"tables,omitempty"`
-	WorkHours   *WorkHours `json:"workHours,omitempty"`
-	ClosedDates []string   `json:"closedDates,omitempty"`
+	Name                 *string               `json:"name,omitempty" validate:"omitempty,min=1,max=100"`
+	IsEnabled            *bool                 `json:"isEnabled,omitempty"`
+	Tables               []Table               `json:"tables,omitempty"`
+	RegularSchedule      *WeekSchedule         `json:"regularSchedule,omitempty"`
+	SpecialDateSchedules []SpecialDateSchedule `json:"specialDateSchedules,omitempty"`
+	ClosedDates          []string              `json:"closedDates,omitempty"`
 }
 
 // GetSubURL returns a sub-URL by ID.
@@ -464,6 +702,88 @@ func (room *Room) GetTablesFromElements() []Element {
 		}
 	}
 	return tables
+}
+
+// Enhanced Availability Models (matching Python RestaurantAvailability)
+
+// DayAvailability represents availability for a specific day (matches Python DayAvailability).
+type DayAvailability struct {
+	Date     string `json:"date"`     // YYYY-MM-DD format
+	Weekday  string `json:"weekday"`  // "Monday", "Tuesday", etc.
+	IsActive bool   `json:"isActive"` // Whether bookings are available on this day
+}
+
+// ReservationSlot represents a bookable time slot (matches Python ReservationSlotSchema).
+type ReservationSlot struct {
+	RoomID  primitive.ObjectID `json:"roomId" bson:"room_id"`
+	TableID primitive.ObjectID `json:"tableId" bson:"table_id"`
+	StartAt time.Time          `json:"startAt" bson:"start_at"`
+	EndAt   time.Time          `json:"endAt" bson:"end_at"`
+}
+
+// RestaurantAvailability represents complete restaurant availability (matches Python RestaurantAvailability).
+type RestaurantAvailability struct {
+	ID                        primitive.ObjectID             `json:"id"`
+	Name                      string                         `json:"name"`
+	City                      string                         `json:"city"`
+	Address                   string                         `json:"address"`
+	ShowDates                 []DayAvailability              `json:"showDates"`                 // Available booking dates
+	SelectedDate              string                         `json:"selectedDate"`              // YYYY-MM-DD format  
+	SlotsByTableID            map[string][]ReservationSlot   `json:"slotsByTableId"`            // Available slots per table
+	StartTimeToMaxDurationMap map[string][]string            `json:"startTimeToMaxDurationMap"` // Time slots → available durations
+}
+
+// TableAvailabilityFilters represents filters for checking table availability.
+type TableAvailabilityFilters struct {
+	RestaurantID primitive.ObjectID `json:"restaurantId"`
+	RoomID       primitive.ObjectID `json:"roomId,omitempty"`
+	TableID      primitive.ObjectID `json:"tableId,omitempty"`
+	StartAt      time.Time          `json:"startAt"`
+	EndAt        time.Time          `json:"endAt"`
+	Date         time.Time          `json:"date"`
+}
+
+// GetActiveStatuses returns the reservation statuses that block table availability.
+// Matches Python active statuses: PENDING, CONFIRMED, ARRIVED
+func GetActiveReservationStatuses() []Status {
+	return []Status{StatusPending, StatusConfirmed, StatusArrived}
+}
+
+// ParseDuration parses duration string like "2:30" into time.Duration.
+func ParseDuration(duration string) (time.Duration, error) {
+	parts := strings.Split(duration, ":")
+	if len(parts) != 2 {
+		return 0, fmt.Errorf("invalid duration format: %s", duration)
+	}
+	
+	hours, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, fmt.Errorf("invalid hours in duration: %s", parts[0])
+	}
+	
+	minutes, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, fmt.Errorf("invalid minutes in duration: %s", parts[1])
+	}
+	
+	return time.Duration(hours)*time.Hour + time.Duration(minutes)*time.Minute, nil
+}
+
+// FormatDuration formats time.Duration into "H:MM" format.
+func FormatDuration(d time.Duration) string {
+	hours := int(d.Hours())
+	minutes := int(d.Minutes()) % 60
+	return fmt.Sprintf("%d:%02d", hours, minutes)
+}
+
+// GetMinReservationDuration returns the minimum reservation duration as time.Duration.
+func (s *Settings) GetMinReservationDuration() (time.Duration, error) {
+	return ParseDuration(s.MinReservationDuration)
+}
+
+// GetMaxReservationDuration returns the maximum reservation duration as time.Duration.
+func (s *Settings) GetMaxReservationDuration() (time.Duration, error) {
+	return ParseDuration(s.MaxReservationDuration)
 }
 
 // GenerateURLName generates a URL-friendly name from the restaurant name.
