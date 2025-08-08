@@ -112,8 +112,16 @@ func (s *Server) setupDependencies() {
 // setupRouter configures the HTTP router.
 func (s *Server) setupRouter() {
 	r := chi.NewRouter()
+	
+	s.setupMiddleware(r)
+	s.setupPublicRoutes(r)
+	s.setupAPIRoutes(r)
+	
+	s.router = r
+}
 
-	// Middleware
+// setupMiddleware configures all middleware for the router.
+func (s *Server) setupMiddleware(r *chi.Mux) {
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.RealIP)
 	
@@ -133,7 +141,10 @@ func (s *Server) setupRouter() {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+}
 
+// setupPublicRoutes configures public routes that don't require authentication.
+func (s *Server) setupPublicRoutes(r *chi.Mux) {
 	// Health check
 	r.Get("/health", s.healthCheck)
 
@@ -142,131 +153,177 @@ func (s *Server) setupRouter() {
 		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
 	))
 
-	// Prometheus metrics endpoint (outside of API versioning)
+	// Prometheus metrics endpoint
 	r.Get("/metrics", s.metricsHandler.GetMetrics)
+}
 
-	// API routes
+// setupAPIRoutes configures all API routes under /api/admin.
+func (s *Server) setupAPIRoutes(r *chi.Mux) {
 	r.Route("/api/admin", func(r chi.Router) {
 		// Swagger documentation under /api/admin/docs
 		r.Get("/docs/*", httpSwagger.Handler(
 			httpSwagger.URL("/api/admin/docs/doc.json"),
 		))
 		
-		// Development endpoints
-		r.Route("/dev", func(r chi.Router) {
-			r.Get("/ping", s.devHandler.Ping)
-		})
-
-		// Authentication endpoints
-		r.Route("/auth", func(r chi.Router) {
-			r.Post("/login", s.authHandler.Login)
-			r.Post("/register", s.authHandler.Register)
-			r.Post("/verify", s.authHandler.Verify)
-			r.Get("/register/employee", s.authHandler.RegisterEmployee)
-			r.Get("/tg", s.authHandler.AuthorizeTelegram)
-			r.Get("/tg/{requestID}", s.authHandler.VerifyTelegram)
-		})
-
-		// Cities endpoints
-		r.Route("/cities", func(r chi.Router) {
-			r.Get("/", s.cityHandler.GetCities)
-			r.Get("/{name}", s.cityHandler.GetCityByName)
-		})
-
-		// Employee endpoints
-		r.Route("/employees", func(r chi.Router) {
-			r.With(s.authMiddleware.RequireAuth).Post("/invite", s.employeeHandler.InviteEmployee) // Create employee invitation (matches Python POST /employees)
-			r.With(s.authMiddleware.RequireAuth).Get("/", s.employeeHandler.ListEmployees)
-			r.With(s.authMiddleware.RequireAuth).Get("/me", s.employeeHandler.GetMe) // Must be before /{id} to avoid conflicts
-			r.With(s.authMiddleware.RequireAuth).Get("/{id}", s.employeeHandler.GetEmployee)
-			r.With(s.authMiddleware.RequireAuth).Put("/{id}", s.employeeHandler.UpdateEmployee)
-			r.With(s.authMiddleware.RequireAuth).Delete("/{id}", s.employeeHandler.DeleteEmployee)
-
-			// Employee invitation management endpoints
-			r.Route("/invitations", func(r chi.Router) {
-				r.Use(s.authMiddleware.RequireAuth)
-				r.Get("/pending", s.employeeHandler.GetPendingInvitations)
-				r.Delete("/{invitationId}", s.employeeHandler.DeleteInvitation)
-				r.Post("/extend", s.employeeHandler.ExtendInvitation)
-				r.Patch("/", s.employeeHandler.UpdateInvitation)
-			})
-
-			// Employee profile management endpoints
-			r.Route("/me", func(r chi.Router) {
-				r.Use(s.authMiddleware.RequireAuth)
-				r.Patch("/", s.employeeHandler.UpdateMe)
-				r.Post("/email/update", s.employeeHandler.UpdateEmail)
-				r.Post("/email/verify", s.employeeHandler.VerifyEmailUpdate)
-				r.Post("/telegram/connect", s.employeeHandler.ConnectTelegram)
-				r.Get("/telegram/connect/{requestId}", s.employeeHandler.CheckTelegramConnection)
-				r.Delete("/telegram", s.employeeHandler.DisconnectTelegram)
-				r.Delete("/email", s.employeeHandler.DisconnectEmail)
-			})
-		})
-
-		// Restaurant endpoints
-		r.Route("/restaurants", func(r chi.Router) {
-			// Any authenticated user can create a restaurant (bootstrap case) - they automatically become owner
-			r.With(s.authMiddleware.RequireAuth).Post("/", s.restaurantHandler.CreateRestaurant)
-			r.With(s.authMiddleware.RequireAuth).Get("/", s.restaurantHandler.ListRestaurants)
-
-			// Special endpoints that need to be before /{id} patterns
-			r.Get("/url-name-availability", s.restaurantHandler.CheckURLNameAvailability)
-
-			// Dynamic restaurant identifier endpoints (handles both ObjectID and URL name)
-			r.Get("/{urlNameOrRestId}", s.restaurantHandler.GetRestaurantByURLNameOrID)
-			r.Get("/{urlNameOrRestId}/availability", s.restaurantHandler.GetRestaurantAvailability)
-
-			// Restaurant management endpoints (require ObjectID)
-			r.Put("/{id}", s.restaurantHandler.UpdateRestaurant)
-			r.Patch("/{id}", s.restaurantHandler.UpdateRestaurant) // PATCH also supported for updates
-			r.Delete("/{id}", s.restaurantHandler.DeleteRestaurant)
-			r.Patch("/{restaurantId}/settings", s.restaurantHandler.UpdateRestaurantSettings)
-			r.Post("/{restaurantId}/enable", s.restaurantHandler.EnableRestaurant)
-			r.Post("/{restaurantId}/disable", s.restaurantHandler.DisableRestaurant)
-
-			// Sub-URL management endpoints
-			r.Post("/{restaurantId}/sub-url", s.restaurantHandler.CreateSubURL)
-			r.Delete("/{restaurantId}/sub-url/{subUrlId}", s.restaurantHandler.DeleteSubURL)
-
-			// Restaurant reservation management endpoints
-			r.Patch("/{restaurantId}/reservations/mark_seen", s.restaurantHandler.MarkReservationsAsSeen)
-			r.Get("/{restaurantId}/reservations/counts", s.restaurantHandler.GetReservationCounts)
-
-			// Room endpoints for restaurants
-			r.Route("/{restaurantId}/rooms", func(r chi.Router) {
-				r.Get("/", s.roomHandler.GetRooms)
-				r.Post("/", s.roomHandler.CreateRoom)
-				r.Get("/{roomId}", s.roomHandler.GetRoom)
-				r.Patch("/{roomId}", s.roomHandler.UpdateRoom)
-				r.Delete("/{roomId}", s.roomHandler.DeleteRoom)
-				r.Post("/{roomId}/enable", s.roomHandler.EnableRoom)
-				r.Post("/{roomId}/disable", s.roomHandler.DisableRoom)
-
-				// Element endpoints for rooms
-				r.Post("/{roomId}/elements", s.roomHandler.SaveElements)
-				r.Patch("/{roomId}/elements/{elementId}", s.roomHandler.UpdateElement)
-				r.Patch("/{roomId}/elements/{elementId}/enable", s.roomHandler.EnableElement)
-				r.Patch("/{roomId}/elements/{elementId}/disable", s.roomHandler.DisableElement)
-
-				// Reservation endpoints for rooms
-				r.Post("/{roomId}/reservations/by_employee", s.reservationHandler.CreateReservationByEmployee)
-				r.Get("/{roomId}/reservations", s.reservationHandler.GetReservationsByRoom)
-			})
-		})
-
-		// Individual reservation management endpoints
-		r.Route("/reservations", func(r chi.Router) {
-			r.Get("/{reservationId}", s.reservationHandler.GetReservation)
-			r.Patch("/{reservationId}/by_admin", s.reservationHandler.UpdateReservationByAdmin)
-			r.Patch("/{reservationId}/status", s.reservationHandler.UpdateReservationStatus)
-			r.Post("/{reservationId}/cancel", s.reservationHandler.CancelReservation)
-		})
-
-		// All required endpoints implemented
+		s.setupDevRoutes(r)
+		s.setupAuthRoutes(r)
+		s.setupCityRoutes(r)
+		s.setupEmployeeRoutes(r)
+		s.setupRestaurantRoutes(r)
+		s.setupReservationRoutes(r)
 	})
+}
 
-	s.router = r
+// setupDevRoutes configures development endpoints.
+func (s *Server) setupDevRoutes(r chi.Router) {
+	r.Route("/dev", func(r chi.Router) {
+		r.Get("/ping", s.devHandler.Ping)
+	})
+}
+
+// setupAuthRoutes configures authentication endpoints.
+func (s *Server) setupAuthRoutes(r chi.Router) {
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/login", s.authHandler.Login)
+		r.Post("/register", s.authHandler.Register)
+		r.Post("/verify", s.authHandler.Verify)
+		r.Get("/register/employee", s.authHandler.RegisterEmployee)
+		r.Get("/tg", s.authHandler.AuthorizeTelegram)
+		r.Get("/tg/{requestID}", s.authHandler.VerifyTelegram)
+	})
+}
+
+// setupCityRoutes configures city endpoints.
+func (s *Server) setupCityRoutes(r chi.Router) {
+	r.Route("/cities", func(r chi.Router) {
+		r.Get("/", s.cityHandler.GetCities)
+		r.Get("/{name}", s.cityHandler.GetCityByName)
+	})
+}
+
+// setupEmployeeRoutes configures employee endpoints.
+func (s *Server) setupEmployeeRoutes(r chi.Router) {
+	r.Route("/employees", func(r chi.Router) {
+		// Apply auth middleware to all employee routes
+		r.Use(s.authMiddleware.RequireAuth)
+		
+		// Main employee operations
+		r.Post("/invite", s.employeeHandler.InviteEmployee)
+		r.Get("/", s.employeeHandler.ListEmployees)
+		r.Get("/me", s.employeeHandler.GetMe) // Must be before /{id}
+		r.Get("/{id}", s.employeeHandler.GetEmployee)
+		r.Put("/{id}", s.employeeHandler.UpdateEmployee)
+		r.Delete("/{id}", s.employeeHandler.DeleteEmployee)
+
+		s.setupEmployeeInvitationRoutes(r)
+		s.setupEmployeeProfileRoutes(r)
+	})
+}
+
+// setupEmployeeInvitationRoutes configures employee invitation management endpoints.
+func (s *Server) setupEmployeeInvitationRoutes(r chi.Router) {
+	r.Route("/invitations", func(r chi.Router) {
+		r.Get("/pending", s.employeeHandler.GetPendingInvitations)
+		r.Delete("/{invitationId}", s.employeeHandler.DeleteInvitation)
+		r.Post("/extend", s.employeeHandler.ExtendInvitation)
+		r.Patch("/", s.employeeHandler.UpdateInvitation)
+	})
+}
+
+// setupEmployeeProfileRoutes configures employee profile management endpoints.
+func (s *Server) setupEmployeeProfileRoutes(r chi.Router) {
+	r.Route("/me", func(r chi.Router) {
+		r.Patch("/", s.employeeHandler.UpdateMe)
+		r.Post("/email/update", s.employeeHandler.UpdateEmail)
+		r.Post("/email/verify", s.employeeHandler.VerifyEmailUpdate)
+		r.Post("/telegram/connect", s.employeeHandler.ConnectTelegram)
+		r.Get("/telegram/connect/{requestId}", s.employeeHandler.CheckTelegramConnection)
+		r.Delete("/telegram", s.employeeHandler.DisconnectTelegram)
+		r.Delete("/email", s.employeeHandler.DisconnectEmail)
+	})
+}
+
+// setupRestaurantRoutes configures restaurant endpoints.
+func (s *Server) setupRestaurantRoutes(r chi.Router) {
+	r.Route("/restaurants", func(r chi.Router) {
+		// Authenticated restaurant operations
+		r.With(s.authMiddleware.RequireAuth).Post("/", s.restaurantHandler.CreateRestaurant)
+		r.With(s.authMiddleware.RequireAuth).Get("/", s.restaurantHandler.ListRestaurants)
+
+		// Public restaurant operations
+		r.Get("/url-name-availability", s.restaurantHandler.CheckURLNameAvailability)
+		r.Get("/{urlNameOrRestId}", s.restaurantHandler.GetRestaurantByURLNameOrID)
+		r.Get("/{urlNameOrRestId}/availability", s.restaurantHandler.GetRestaurantAvailability)
+
+		// Restaurant management (requires auth)
+		r.With(s.authMiddleware.RequireAuth).Put("/{id}", s.restaurantHandler.UpdateRestaurant)
+		r.With(s.authMiddleware.RequireAuth).Patch("/{id}", s.restaurantHandler.UpdateRestaurant)
+		r.With(s.authMiddleware.RequireAuth).Delete("/{id}", s.restaurantHandler.DeleteRestaurant)
+		r.With(s.authMiddleware.RequireAuth).Patch("/{restaurantId}/settings", s.restaurantHandler.UpdateRestaurantSettings)
+		r.With(s.authMiddleware.RequireAuth).Post("/{restaurantId}/enable", s.restaurantHandler.EnableRestaurant)
+		r.With(s.authMiddleware.RequireAuth).Post("/{restaurantId}/disable", s.restaurantHandler.DisableRestaurant)
+
+		s.setupRestaurantSubURLRoutes(r)
+		s.setupRestaurantReservationRoutes(r)
+		s.setupRoomRoutes(r)
+	})
+}
+
+// setupRestaurantSubURLRoutes configures sub-URL management endpoints.
+func (s *Server) setupRestaurantSubURLRoutes(r chi.Router) {
+	r.With(s.authMiddleware.RequireAuth).Post("/{restaurantId}/sub-url", s.restaurantHandler.CreateSubURL)
+	r.With(s.authMiddleware.RequireAuth).Delete("/{restaurantId}/sub-url/{subUrlId}", s.restaurantHandler.DeleteSubURL)
+}
+
+// setupRestaurantReservationRoutes configures restaurant-level reservation endpoints.
+func (s *Server) setupRestaurantReservationRoutes(r chi.Router) {
+	r.With(s.authMiddleware.RequireAuth).Patch("/{restaurantId}/reservations/mark_seen", s.restaurantHandler.MarkReservationsAsSeen)
+	r.With(s.authMiddleware.RequireAuth).Get("/{restaurantId}/reservations/counts", s.restaurantHandler.GetReservationCounts)
+}
+
+// setupRoomRoutes configures room endpoints for restaurants.
+func (s *Server) setupRoomRoutes(r chi.Router) {
+	r.Route("/{restaurantId}/rooms", func(r chi.Router) {
+		r.Use(s.authMiddleware.RequireAuth)
+		
+		// Room operations
+		r.Get("/", s.roomHandler.GetRooms)
+		r.Post("/", s.roomHandler.CreateRoom)
+		r.Get("/{roomId}", s.roomHandler.GetRoom)
+		r.Patch("/{roomId}", s.roomHandler.UpdateRoom)
+		r.Delete("/{roomId}", s.roomHandler.DeleteRoom)
+		r.Post("/{roomId}/enable", s.roomHandler.EnableRoom)
+		r.Post("/{roomId}/disable", s.roomHandler.DisableRoom)
+
+		s.setupRoomElementRoutes(r)
+		s.setupRoomReservationRoutes(r)
+	})
+}
+
+// setupRoomElementRoutes configures element endpoints for rooms.
+func (s *Server) setupRoomElementRoutes(r chi.Router) {
+	r.Post("/{roomId}/elements", s.roomHandler.SaveElements)
+	r.Patch("/{roomId}/elements/{elementId}", s.roomHandler.UpdateElement)
+	r.Patch("/{roomId}/elements/{elementId}/enable", s.roomHandler.EnableElement)
+	r.Patch("/{roomId}/elements/{elementId}/disable", s.roomHandler.DisableElement)
+}
+
+// setupRoomReservationRoutes configures reservation endpoints for rooms.
+func (s *Server) setupRoomReservationRoutes(r chi.Router) {
+	r.Post("/{roomId}/reservations/by_employee", s.reservationHandler.CreateReservationByEmployee)
+	r.Get("/{roomId}/reservations", s.reservationHandler.GetReservationsByRoom)
+}
+
+// setupReservationRoutes configures individual reservation management endpoints.
+func (s *Server) setupReservationRoutes(r chi.Router) {
+	r.Route("/reservations", func(r chi.Router) {
+		r.Use(s.authMiddleware.RequireAuth)
+		
+		r.Get("/{reservationId}", s.reservationHandler.GetReservation)
+		r.Patch("/{reservationId}/by_admin", s.reservationHandler.UpdateReservationByAdmin)
+		r.Patch("/{reservationId}/status", s.reservationHandler.UpdateReservationStatus)
+		r.Post("/{reservationId}/cancel", s.reservationHandler.CancelReservation)
+	})
 }
 
 // setupServer configures the HTTP server.
