@@ -393,68 +393,6 @@ func (rs *RestaurantService) DisableRestaurant(ctx context.Context, id primitive
 	return existingRestaurant, nil
 }
 
-// GetRestaurantAvailability gets availability information for a restaurant on a specific date.
-func (rs *RestaurantService) GetRestaurantAvailability(ctx context.Context, urlNameOrID string, date string) (*model.RestaurantAvailabilityBasicResponse, error) {
-	// Get restaurant
-	restaurant, err := rs.GetRestaurantByURLNameOrID(ctx, urlNameOrID)
-	if err != nil {
-		return nil, err
-	}
-
-	// If no date provided, use today
-	if date == "" {
-		date = time.Now().Format("2006-01-02")
-	}
-
-	// Parse the date to get the day of week
-	parsedDate, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		return nil, fmt.Errorf("invalid date format, expected YYYY-MM-DD: %w", err)
-	}
-
-	// Check availability for each room
-	roomAvailabilities := make([]model.RoomAvailability, 0, len(restaurant.Rooms))
-	isRestaurantAvailable := false
-
-	for _, room := range restaurant.Rooms {
-		roomAvail := model.RoomAvailability{
-			RoomID:   room.ID,
-			RoomName: room.Name,
-		}
-
-		// Check if room is enabled
-		if !room.IsEnabled {
-			roomAvail.IsAvailable = false
-			roomAvail.Reason = "room_disabled"
-		} else if room.IsClosedOnDate(date) {
-			// Check if room is closed on this specific date
-			roomAvail.IsAvailable = false
-			roomAvail.Reason = "closed_on_date"
-		} else if !room.IsOpenOnDate(parsedDate) {
-			// Check if room is open on this date (using enhanced schedule)
-			roomAvail.IsAvailable = false
-			roomAvail.Reason = "closed_on_date"
-		} else if len(room.GetActiveTables()) == 0 {
-			// Check if room has any active tables
-			roomAvail.IsAvailable = false
-			roomAvail.Reason = "no_active_tables"
-		} else {
-			// Room is available
-			roomAvail.IsAvailable = true
-			isRestaurantAvailable = true
-		}
-
-		roomAvailabilities = append(roomAvailabilities, roomAvail)
-	}
-
-	return &model.RestaurantAvailabilityBasicResponse{
-		RestaurantID: restaurant.ID,
-		URLName:      restaurant.URLName,
-		Date:         date,
-		IsAvailable:  isRestaurantAvailable,
-		Rooms:        roomAvailabilities,
-	}, nil
-}
 
 // AddSubURL adds a new sub-URL to a restaurant.
 func (rs *RestaurantService) AddSubURL(ctx context.Context, restaurantID primitive.ObjectID, req *model.CreateSubURLRequest) (*model.Restaurant, error) {

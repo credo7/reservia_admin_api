@@ -490,22 +490,6 @@ func (r *Restaurant) ToMiniResponse() *RestaurantMiniResponse {
 	}
 }
 
-// RestaurantAvailabilityBasicResponse represents basic restaurant availability for a specific date.
-type RestaurantAvailabilityBasicResponse struct {
-	RestaurantID primitive.ObjectID `json:"restaurantId"`
-	URLName      string             `json:"urlName"`
-	Date         string             `json:"date"` // YYYY-MM-DD format
-	IsAvailable  bool               `json:"isAvailable"`
-	Rooms        []RoomAvailability `json:"rooms"`
-}
-
-// RoomAvailability represents availability for a specific room.
-type RoomAvailability struct {
-	RoomID      primitive.ObjectID `json:"roomId"`
-	RoomName    string             `json:"roomName"`
-	IsAvailable bool               `json:"isAvailable"`
-	Reason      string             `json:"reason,omitempty"` // closed, no_tables, etc.
-}
 
 // SubURL represents a sub-URL for tracking reservation sources.
 type SubURL struct {
