@@ -210,13 +210,16 @@ func (s *Server) setupEmployeeRoutes(r chi.Router) {
 		// Main employee operations
 		r.Post("/invite", s.employeeHandler.InviteEmployee)
 		r.Get("/", s.employeeHandler.ListEmployees)
-		r.Get("/me", s.employeeHandler.GetMe) // Must be before /{id}
+		
+		// Profile routes must be before /{id} to avoid conflicts
+		s.setupEmployeeProfileRoutes(r)
+		
+		// Dynamic ID routes
 		r.Get("/{id}", s.employeeHandler.GetEmployee)
 		r.Put("/{id}", s.employeeHandler.UpdateEmployee)
 		r.Delete("/{id}", s.employeeHandler.DeleteEmployee)
 
 		s.setupEmployeeInvitationRoutes(r)
-		s.setupEmployeeProfileRoutes(r)
 	})
 }
 
@@ -233,6 +236,7 @@ func (s *Server) setupEmployeeInvitationRoutes(r chi.Router) {
 // setupEmployeeProfileRoutes configures employee profile management endpoints.
 func (s *Server) setupEmployeeProfileRoutes(r chi.Router) {
 	r.Route("/me", func(r chi.Router) {
+		r.Get("/", s.employeeHandler.GetMe) // GET /employees/me
 		r.Patch("/", s.employeeHandler.UpdateMe)
 		r.Post("/email/update", s.employeeHandler.UpdateEmail)
 		r.Post("/email/verify", s.employeeHandler.VerifyEmailUpdate)
