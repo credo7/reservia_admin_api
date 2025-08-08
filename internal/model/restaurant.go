@@ -776,6 +776,9 @@ func GenerateURLName(name string) string {
 	// Convert to lowercase
 	urlName := strings.ToLower(name)
 
+	// Transliterate Cyrillic and other non-ASCII characters to ASCII
+	urlName = transliterateToASCII(urlName)
+
 	// Replace spaces and special characters with hyphens
 	reg := regexp.MustCompile(`[^a-z0-9]+`)
 	urlName = reg.ReplaceAllString(urlName, "-")
@@ -791,4 +794,53 @@ func GenerateURLName(name string) string {
 	}
 
 	return urlName
+}
+
+// transliterateToASCII converts Cyrillic and other non-ASCII characters to ASCII equivalents.
+func transliterateToASCII(input string) string {
+	// Cyrillic to Latin transliteration map
+	transliterationMap := map[rune]string{
+		// Russian Cyrillic lowercase
+		'а': "a", 'б': "b", 'в': "v", 'г': "g", 'д': "d", 'е': "e", 'ё': "e", 'ж': "zh",
+		'з': "z", 'и': "i", 'й': "y", 'к': "k", 'л': "l", 'м': "m", 'н': "n", 'о': "o",
+		'п': "p", 'р': "r", 'с': "s", 'т': "t", 'у': "u", 'ф': "f", 'х': "h", 'ц': "ts",
+		'ч': "ch", 'ш': "sh", 'щ': "sch", 'ъ': "", 'ы': "y", 'ь': "", 'э': "e", 'ю': "yu", 'я': "ya",
+		
+		// Russian Cyrillic uppercase
+		'А': "A", 'Б': "B", 'В': "V", 'Г': "G", 'Д': "D", 'Е': "E", 'Ё': "E", 'Ж': "Zh",
+		'З': "Z", 'И': "I", 'Й': "Y", 'К': "K", 'Л': "L", 'М': "M", 'Н': "N", 'О': "O",
+		'П': "P", 'Р': "R", 'С': "S", 'Т': "T", 'У': "U", 'Ф': "F", 'Х': "H", 'Ц': "Ts",
+		'Ч': "Ch", 'Ш': "Sh", 'Щ': "Sch", 'Ъ': "", 'Ы': "Y", 'Ь': "", 'Э': "E", 'Ю': "Yu", 'Я': "Ya",
+		
+		// Ukrainian specific characters
+		'є': "ye", 'і': "i", 'ї': "yi", 'ґ': "g",
+		'Є': "Ye", 'І': "I", 'Ї': "Yi", 'Ґ': "G",
+		
+		// Common diacritics
+		'á': "a", 'à': "a", 'ä': "a", 'â': "a", 'ã': "a", 'å': "a",
+		'é': "e", 'è': "e", 'ë': "e", 'ê': "e",
+		'í': "i", 'ì': "i", 'ï': "i", 'î': "i",
+		'ó': "o", 'ò': "o", 'ö': "o", 'ô': "o", 'õ': "o",
+		'ú': "u", 'ù': "u", 'ü': "u", 'û': "u",
+		'ç': "c", 'ñ': "n",
+		'Á': "A", 'À': "A", 'Ä': "A", 'Â': "A", 'Ã': "A", 'Å': "A",
+		'É': "E", 'È': "E", 'Ë': "E", 'Ê': "E",
+		'Í': "I", 'Ì': "I", 'Ï': "I", 'Î': "I",
+		'Ó': "O", 'Ò': "O", 'Ö': "O", 'Ô': "O", 'Õ': "O",
+		'Ú': "U", 'Ù': "U", 'Ü': "U", 'Û': "U",
+		'Ç': "C", 'Ñ': "N",
+	}
+
+	result := strings.Builder{}
+	for _, char := range input {
+		if replacement, exists := transliterationMap[char]; exists {
+			result.WriteString(replacement)
+		} else {
+			// Keep ASCII characters as is, ignore others
+			if char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || char == ' ' || char == '-' {
+				result.WriteRune(char)
+			}
+		}
+	}
+	return result.String()
 }
