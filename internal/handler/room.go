@@ -69,10 +69,7 @@ func (h *RoomHandler) GetRooms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.writeJSON(w, http.StatusOK, map[string]interface{}{
-		"rooms": rooms,
-		"count": len(rooms),
-	})
+	h.writeJSON(w, http.StatusOK, rooms)
 }
 
 // GetRoom handles GET /restaurants/{restaurantId}/rooms/{roomId}.
