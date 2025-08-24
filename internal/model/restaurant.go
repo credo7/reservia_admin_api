@@ -67,7 +67,6 @@ type Table struct {
 	IsEnabled bool               `json:"isEnabled" bson:"is_enabled"`
 }
 
-
 // Enhanced Schedule Models (matches Python implementation)
 
 // WeekSchedule represents a weekly schedule with support for multiple time ranges per day.
@@ -96,8 +95,8 @@ type TimeRange struct {
 // SpecialDateSchedule represents override schedules for specific dates.
 type SpecialDateSchedule struct {
 	ID         primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Name       string             `json:"name" bson:"name"`                   // e.g., "New Year Special Hours"
-	Dates      []string           `json:"dates" bson:"dates"`                 // YYYY-MM-DD format
+	Name       string             `json:"name" bson:"name"`   // e.g., "New Year Special Hours"
+	Dates      []string           `json:"dates" bson:"dates"` // YYYY-MM-DD format
 	TimeRanges []TimeRange        `json:"timeRanges" bson:"time_ranges"`
 	IsActive   bool               `json:"isActive" bson:"is_active"`
 }
@@ -205,7 +204,6 @@ func (room *Room) GetTotalCapacity() int {
 	return total
 }
 
-
 // IsClosedOnDate checks if the room is closed on a specific date.
 func (room *Room) IsClosedOnDate(date string) bool {
 	for _, closedDate := range room.ClosedDates {
@@ -250,7 +248,7 @@ func (room *Room) GetActiveTimeRangesForDate(checkDate time.Time) []TimeRange {
 		if !special.IsActive {
 			continue
 		}
-		
+
 		for _, specialDate := range special.Dates {
 			if specialDate == dateStr {
 				return special.TimeRanges
@@ -304,7 +302,7 @@ func (room *Room) HasOvernightShiftIntoDate(dayBefore, currentDay time.Time) boo
 		if err != nil {
 			continue
 		}
-		
+
 		endTime, err := time.Parse("15:04", tr.EndTime)
 		if err != nil {
 			continue
@@ -348,7 +346,7 @@ func (room *Room) IsWithinWorkingHours(checkDateTime time.Time) bool {
 		if err != nil {
 			continue
 		}
-		
+
 		endTime, err := time.Parse("15:04", tr.EndTime)
 		if err != nil {
 			continue
@@ -384,7 +382,7 @@ func (room *Room) IsWithinWorkingHours(checkDateTime time.Time) bool {
 		if err != nil {
 			continue
 		}
-		
+
 		endTime, err := time.Parse("15:04", tr.EndTime)
 		if err != nil {
 			continue
@@ -415,19 +413,19 @@ func (room *Room) GetNextWorkingPeriod(fromDateTime time.Time) (time.Time, time.
 	// Check current day and next 7 days
 	for i := 0; i < 7; i++ {
 		checkDate := fromDateTime.AddDate(0, 0, i)
-		
+
 		if room.IsClosedOnDate(checkDate.Format("2006-01-02")) {
 			continue
 		}
 
 		timeRanges := room.GetActiveTimeRangesForDate(checkDate)
-		
+
 		for _, tr := range timeRanges {
 			startTime, err := time.Parse("15:04", tr.StartTime)
 			if err != nil {
 				continue
 			}
-			
+
 			endTime, err := time.Parse("15:04", tr.EndTime)
 			if err != nil {
 				continue
@@ -489,7 +487,6 @@ func (r *Restaurant) ToMiniResponse() *RestaurantMiniResponse {
 		IsActive: r.IsActive,
 	}
 }
-
 
 // SubURL represents a sub-URL for tracking reservation sources.
 type SubURL struct {
@@ -602,19 +599,19 @@ const (
 // Element represents a table, seat, or other UI element within a room.
 type Element struct {
 	ID         primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	RoomID     primitive.ObjectID `json:"roomId" bson:"room_id"`
+	RoomID     primitive.ObjectID `json:"room_id" bson:"room_id"`
 	Type       ElementType        `json:"type" bson:"type"`
 	Code       ElementCode        `json:"code" bson:"code"`
 	Index      int                `json:"index" bson:"index"`
 	Rotation   int                `json:"rotation" bson:"rotation"`
-	TableIndex *int               `json:"tableIndex,omitempty" bson:"table_index,omitempty"`
+	TableIndex *int               `json:"table_index,omitempty" bson:"table_index,omitempty"`
 	X          float64            `json:"x" bson:"x"`
 	Y          float64            `json:"y" bson:"y"`
 	Width      int                `json:"width" bson:"width"`
 	Height     int                `json:"height" bson:"height"`
 	Text       *string            `json:"text,omitempty" bson:"text,omitempty"`
-	FontSize   *int               `json:"fontSize,omitempty" bson:"font_size,omitempty"`
-	IsEnabled  bool               `json:"isEnabled" bson:"is_enabled"`
+	FontSize   *int               `json:"font_size,omitempty" bson:"font_size,omitempty"`
+	IsEnabled  bool               `json:"is_enabled" bson:"is_enabled"`
 	Seats      []Element          `json:"seats,omitempty" bson:"seats,omitempty"`
 }
 
@@ -624,13 +621,13 @@ type CreateElementRequest struct {
 	Code       ElementCode `json:"code" validate:"required"`
 	Index      int         `json:"index" validate:"required"`
 	Rotation   int         `json:"rotation"`
-	TableIndex *int        `json:"tableIndex,omitempty"`
+	TableIndex *int        `json:"table_index,omitempty"`
 	X          float64     `json:"x" validate:"required"`
 	Y          float64     `json:"y" validate:"required"`
 	Width      int         `json:"width" validate:"required,gt=0"`
 	Height     int         `json:"height" validate:"required,gt=0"`
 	Text       *string     `json:"text,omitempty"`
-	FontSize   *int        `json:"fontSize,omitempty"`
+	FontSize   *int        `json:"font_size,omitempty"`
 	Seats      []Element   `json:"seats,omitempty"`
 }
 
@@ -640,14 +637,14 @@ type UpdateElementRequest struct {
 	Code       *ElementCode `json:"code,omitempty"`
 	Index      *int         `json:"index,omitempty"`
 	Rotation   *int         `json:"rotation,omitempty"`
-	TableIndex *int         `json:"tableIndex,omitempty"`
+	TableIndex *int         `json:"table_index,omitempty"`
 	X          *float64     `json:"x,omitempty"`
 	Y          *float64     `json:"y,omitempty"`
 	Width      *int         `json:"width,omitempty"`
 	Height     *int         `json:"height,omitempty"`
 	Text       *string      `json:"text,omitempty"`
-	FontSize   *int         `json:"fontSize,omitempty"`
-	IsEnabled  *bool        `json:"isEnabled,omitempty"`
+	FontSize   *int         `json:"font_size,omitempty"`
+	IsEnabled  *bool        `json:"is_enabled,omitempty"`
 	Seats      []Element    `json:"seats,omitempty"`
 }
 
@@ -707,14 +704,14 @@ type ReservationSlot struct {
 
 // RestaurantAvailability represents complete restaurant availability (matches Python RestaurantAvailability).
 type RestaurantAvailability struct {
-	ID                        primitive.ObjectID             `json:"id"`
-	Name                      string                         `json:"name"`
-	City                      string                         `json:"city"`
-	Address                   string                         `json:"address"`
-	ShowDates                 []DayAvailability              `json:"showDates"`                 // Available booking dates
-	SelectedDate              string                         `json:"selectedDate"`              // YYYY-MM-DD format  
-	SlotsByTableID            map[string][]ReservationSlot   `json:"slotsByTableId"`            // Available slots per table
-	StartTimeToMaxDurationMap map[string][]string            `json:"startTimeToMaxDurationMap"` // Time slots → available durations
+	ID                        primitive.ObjectID           `json:"id"`
+	Name                      string                       `json:"name"`
+	City                      string                       `json:"city"`
+	Address                   string                       `json:"address"`
+	ShowDates                 []DayAvailability            `json:"showDates"`                 // Available booking dates
+	SelectedDate              string                       `json:"selectedDate"`              // YYYY-MM-DD format
+	SlotsByTableID            map[string][]ReservationSlot `json:"slotsByTableId"`            // Available slots per table
+	StartTimeToMaxDurationMap map[string][]string          `json:"startTimeToMaxDurationMap"` // Time slots → available durations
 }
 
 // TableAvailabilityFilters represents filters for checking table availability.
@@ -739,17 +736,17 @@ func ParseDuration(duration string) (time.Duration, error) {
 	if len(parts) != 2 {
 		return 0, fmt.Errorf("invalid duration format: %s", duration)
 	}
-	
+
 	hours, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return 0, fmt.Errorf("invalid hours in duration: %s", parts[0])
 	}
-	
+
 	minutes, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return 0, fmt.Errorf("invalid minutes in duration: %s", parts[1])
 	}
-	
+
 	return time.Duration(hours)*time.Hour + time.Duration(minutes)*time.Minute, nil
 }
 
@@ -805,17 +802,17 @@ func transliterateToASCII(input string) string {
 		'з': "z", 'и': "i", 'й': "y", 'к': "k", 'л': "l", 'м': "m", 'н': "n", 'о': "o",
 		'п': "p", 'р': "r", 'с': "s", 'т': "t", 'у': "u", 'ф': "f", 'х': "h", 'ц': "ts",
 		'ч': "ch", 'ш': "sh", 'щ': "sch", 'ъ': "", 'ы': "y", 'ь': "", 'э': "e", 'ю': "yu", 'я': "ya",
-		
+
 		// Russian Cyrillic uppercase
 		'А': "A", 'Б': "B", 'В': "V", 'Г': "G", 'Д': "D", 'Е': "E", 'Ё': "E", 'Ж': "Zh",
 		'З': "Z", 'И': "I", 'Й': "Y", 'К': "K", 'Л': "L", 'М': "M", 'Н': "N", 'О': "O",
 		'П': "P", 'Р': "R", 'С': "S", 'Т': "T", 'У': "U", 'Ф': "F", 'Х': "H", 'Ц': "Ts",
 		'Ч': "Ch", 'Ш': "Sh", 'Щ': "Sch", 'Ъ': "", 'Ы': "Y", 'Ь': "", 'Э': "E", 'Ю': "Yu", 'Я': "Ya",
-		
+
 		// Ukrainian specific characters
 		'є': "ye", 'і': "i", 'ї': "yi", 'ґ': "g",
 		'Є': "Ye", 'І': "I", 'Ї': "Yi", 'Ґ': "G",
-		
+
 		// Common diacritics
 		'á': "a", 'à': "a", 'ä': "a", 'â': "a", 'ã': "a", 'å': "a",
 		'é': "e", 'è': "e", 'ë': "e", 'ê': "e",

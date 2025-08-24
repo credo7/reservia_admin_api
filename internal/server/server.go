@@ -113,11 +113,11 @@ func (s *Server) setupDependencies() {
 // setupRouter configures the HTTP router.
 func (s *Server) setupRouter() {
 	r := chi.NewRouter()
-	
+
 	s.setupMiddleware(r)
 	s.setupPublicRoutes(r)
 	s.setupAPIRoutes(r)
-	
+
 	s.router = r
 }
 
@@ -125,18 +125,18 @@ func (s *Server) setupRouter() {
 func (s *Server) setupMiddleware(r *chi.Mux) {
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.RealIP)
-	
+
 	// Custom logging middleware that excludes health checks
 	loggingMiddleware := middleware.NewLoggingMiddleware(s.logger)
 	r.Use(loggingMiddleware.Handler)
-	
+
 	r.Use(chiMiddleware.Recoverer)
 	r.Use(chiMiddleware.Timeout(60 * time.Second))
 
 	// CORS
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
@@ -165,7 +165,7 @@ func (s *Server) setupAPIRoutes(r *chi.Mux) {
 		r.Get("/docs/*", httpSwagger.Handler(
 			httpSwagger.URL("/api/admin/docs/doc.json"),
 		))
-		
+
 		s.setupDevRoutes(r)
 		s.setupAuthRoutes(r)
 		s.setupCityRoutes(r)
@@ -207,14 +207,14 @@ func (s *Server) setupEmployeeRoutes(r chi.Router) {
 	r.Route("/employees", func(r chi.Router) {
 		// Apply auth middleware to all employee routes
 		r.Use(s.authMiddleware.RequireAuth)
-		
+
 		// Main employee operations
 		r.Post("/invite", s.employeeHandler.InviteEmployee)
 		r.Get("/", s.employeeHandler.ListEmployees)
-		
+
 		// Profile routes must be before /{id} to avoid conflicts
 		s.setupEmployeeProfileRoutes(r)
-		
+
 		// Dynamic ID routes
 		r.Get("/{id}", s.employeeHandler.GetEmployee)
 		r.Put("/{id}", s.employeeHandler.UpdateEmployee)
@@ -261,7 +261,6 @@ func (s *Server) setupRestaurantRoutes(r chi.Router) {
 		r.Get("/{urlNameOrRestId}/availability", s.restaurantHandler.GetRestaurantAvailability)
 
 		// Restaurant management (requires auth)
-		r.With(s.authMiddleware.RequireAuth).Put("/{id}", s.restaurantHandler.UpdateRestaurant)
 		r.With(s.authMiddleware.RequireAuth).Patch("/{id}", s.restaurantHandler.UpdateRestaurant)
 		r.With(s.authMiddleware.RequireAuth).Delete("/{id}", s.restaurantHandler.DeleteRestaurant)
 		r.With(s.authMiddleware.RequireAuth).Patch("/{restaurantId}/settings", s.restaurantHandler.UpdateRestaurantSettings)
@@ -290,7 +289,7 @@ func (s *Server) setupRestaurantReservationRoutes(r chi.Router) {
 func (s *Server) setupRoomRoutes(r chi.Router) {
 	r.Route("/{restaurantId}/rooms", func(r chi.Router) {
 		r.Use(s.authMiddleware.RequireAuth)
-		
+
 		// Room operations
 		r.Get("/", s.roomHandler.GetRooms)
 		r.Post("/", s.roomHandler.CreateRoom)
@@ -323,7 +322,7 @@ func (s *Server) setupRoomReservationRoutes(r chi.Router) {
 func (s *Server) setupReservationRoutes(r chi.Router) {
 	r.Route("/reservations", func(r chi.Router) {
 		r.Use(s.authMiddleware.RequireAuth)
-		
+
 		r.Get("/{reservationId}", s.reservationHandler.GetReservation)
 		r.Patch("/{reservationId}/by_admin", s.reservationHandler.UpdateReservationByAdmin)
 		r.Patch("/{reservationId}/status", s.reservationHandler.UpdateReservationStatus)

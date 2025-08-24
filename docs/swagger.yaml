@@ -168,7 +168,7 @@ definitions:
     properties:
       code:
         $ref: '#/definitions/model.ElementCode'
-      fontSize:
+      font_size:
         type: integer
       height:
         type: integer
@@ -176,9 +176,9 @@ definitions:
         type: string
       index:
         type: integer
-      isEnabled:
+      is_enabled:
         type: boolean
-      roomId:
+      room_id:
         type: string
       rotation:
         type: integer
@@ -186,7 +186,7 @@ definitions:
         items:
           $ref: '#/definitions/model.Element'
         type: array
-      tableIndex:
+      table_index:
         type: integer
       text:
         type: string
@@ -734,13 +734,13 @@ definitions:
     properties:
       code:
         $ref: '#/definitions/model.ElementCode'
-      fontSize:
+      font_size:
         type: integer
       height:
         type: integer
       index:
         type: integer
-      isEnabled:
+      is_enabled:
         type: boolean
       rotation:
         type: integer
@@ -748,7 +748,7 @@ definitions:
         items:
           $ref: '#/definitions/model.Element'
         type: array
-      tableIndex:
+      table_index:
         type: integer
       text:
         type: string
@@ -790,6 +790,36 @@ definitions:
         $ref: '#/definitions/model.Status'
     required:
     - status
+    type: object
+  model.UpdateRestaurantRequest:
+    properties:
+      address:
+        maxLength: 200
+        minLength: 5
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      email:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      phone:
+        type: string
+      rooms:
+        items:
+          $ref: '#/definitions/model.Room'
+        type: array
+      settings:
+        $ref: '#/definitions/model.Settings'
+      utcOffset:
+        maximum: 14
+        minimum: -12
+        type: integer
     type: object
   model.UpdateRestaurantSettingsRequest:
     properties:
@@ -2126,6 +2156,50 @@ paths:
       tags:
       - restaurants
   /restaurants/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a restaurant by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Restaurant deleted successfully
+        "400":
+          description: Invalid restaurant ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Restaurant not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a restaurant
+      tags:
+      - restaurants
     get:
       consumes:
       - application/json
@@ -2156,6 +2230,146 @@ paths:
               type: string
             type: object
       summary: Get restaurant by ID
+      tags:
+      - restaurants
+    patch:
+      consumes:
+      - application/json
+      description: Update restaurant details. City cannot be changed after creation.
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Restaurant update data
+        in: body
+        name: restaurant
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateRestaurantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Restaurant updated successfully
+          schema:
+            $ref: '#/definitions/model.Restaurant'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Restaurant not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update restaurant information
+      tags:
+      - restaurants
+  /restaurants/{id}/rooms:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all rooms for a specific restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Restaurant rooms with count
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid restaurant ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Restaurant not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get restaurant rooms
+      tags:
+      - restaurants
+  /restaurants/{id}/rooms/{roomId}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific room by ID from a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Room found successfully
+          schema:
+            $ref: '#/definitions/model.Room'
+        "400":
+          description: Invalid restaurant ID or room ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Room not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get a specific room from a restaurant
       tags:
       - restaurants
   /restaurants/{restaurantId}/disable:
@@ -2924,8 +3138,9 @@ paths:
         "200":
           description: Reservations retrieved successfully
           schema:
-            additionalProperties: true
-            type: object
+            items:
+              $ref: '#/definitions/model.ReservationResponse'
+            type: array
         "400":
           description: Invalid request
           schema:

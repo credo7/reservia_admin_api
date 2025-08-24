@@ -112,7 +112,7 @@ func (h *ReservationHandler) CreateReservationByEmployee(w http.ResponseWriter, 
 //	@Param			start_date			query		string	false	"Filter by start date (YYYY-MM-DD format)"
 //	@Param			end_date			query		string	false	"Filter by end date (YYYY-MM-DD format)"
 //	@Param			is_seen				query		bool	false	"Filter by seen status"
-//	@Success		200					{object}	map[string]interface{}	"Reservations retrieved successfully"
+//	@Success		200					{array}		model.ReservationResponse	"Reservations retrieved successfully"
 //	@Failure		400					{object}	map[string]string		"Invalid request"
 //	@Failure		404					{object}	map[string]string		"Restaurant or room not found"
 //	@Failure		500					{object}	map[string]string		"Internal server error"
@@ -202,13 +202,7 @@ func (h *ReservationHandler) GetReservationsByRoom(w http.ResponseWriter, r *htt
 		responses[i] = reservation.ToResponse()
 	}
 
-	h.writeJSON(w, http.StatusOK, map[string]interface{}{
-		"reservations": responses,
-		"limit":        limit,
-		"offset":       offset,
-		"count":        len(responses),
-		"filters":      filters,
-	})
+	h.writeJSON(w, http.StatusOK, responses)
 }
 
 // GetReservation handles GET /reservations/{reservationId}.

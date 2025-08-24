@@ -124,7 +124,22 @@ func (h *RestaurantHandler) GetRestaurant(w http.ResponseWriter, r *http.Request
 	h.writeJSON(w, http.StatusOK, rest)
 }
 
-// UpdateRestaurant handles PUT /restaurants/{id}.
+// UpdateRestaurant handles PATCH /restaurants/{id}.
+//
+//	@Summary		Update restaurant information
+//	@Description	Update restaurant details. City cannot be changed after creation.
+//	@Tags			restaurants
+//	@Accept			json
+//	@Produce		json
+//	@Param			id			path		string							true	"Restaurant ID"
+//	@Param			restaurant	body		model.UpdateRestaurantRequest	true	"Restaurant update data"
+//	@Success		200			{object}	model.Restaurant				"Restaurant updated successfully"
+//	@Failure		400			{object}	map[string]string				"Invalid request"
+//	@Failure		401			{object}	map[string]string				"Authentication required"
+//	@Failure		404			{object}	map[string]string				"Restaurant not found"
+//	@Failure		500			{object}	map[string]string				"Internal server error"
+//	@Router			/restaurants/{id} [patch]
+//	@Security		BearerAuth
 func (h *RestaurantHandler) UpdateRestaurant(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -150,6 +165,20 @@ func (h *RestaurantHandler) UpdateRestaurant(w http.ResponseWriter, r *http.Requ
 }
 
 // DeleteRestaurant handles DELETE /restaurants/{id}.
+//
+//	@Summary		Delete a restaurant
+//	@Description	Delete a restaurant by ID
+//	@Tags			restaurants
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path	string	true	"Restaurant ID"
+//	@Success		204			"Restaurant deleted successfully"
+//	@Failure		400	{object}	map[string]string	"Invalid restaurant ID"
+//	@Failure		401	{object}	map[string]string	"Authentication required"
+//	@Failure		404	{object}	map[string]string	"Restaurant not found"
+//	@Failure		500	{object}	map[string]string	"Internal server error"
+//	@Router			/restaurants/{id} [delete]
+//	@Security		BearerAuth
 func (h *RestaurantHandler) DeleteRestaurant(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -215,6 +244,19 @@ func (h *RestaurantHandler) ListRestaurants(w http.ResponseWriter, r *http.Reque
 }
 
 // GetRestaurantRooms handles GET /restaurants/{id}/rooms.
+//
+//	@Summary		Get restaurant rooms
+//	@Description	Retrieve all rooms for a specific restaurant
+//	@Tags			restaurants
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		string	true	"Restaurant ID"
+//	@Success		200	{object}	map[string]interface{}	"Restaurant rooms with count"
+//	@Failure		400	{object}	map[string]string		"Invalid restaurant ID"
+//	@Failure		404	{object}	map[string]string		"Restaurant not found"
+//	@Failure		500	{object}	map[string]string		"Internal server error"
+//	@Router			/restaurants/{id}/rooms [get]
+//	@Security		BearerAuth
 func (h *RestaurantHandler) GetRestaurantRooms(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -237,6 +279,20 @@ func (h *RestaurantHandler) GetRestaurantRooms(w http.ResponseWriter, r *http.Re
 }
 
 // GetRestaurantRoom handles GET /restaurants/{id}/rooms/{roomId}.
+//
+//	@Summary		Get a specific room from a restaurant
+//	@Description	Retrieve a specific room by ID from a restaurant
+//	@Tags			restaurants
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path		string			true	"Restaurant ID"
+//	@Param			roomId	path		string			true	"Room ID"
+//	@Success		200		{object}	model.Room		"Room found successfully"
+//	@Failure		400		{object}	map[string]string	"Invalid restaurant ID or room ID"
+//	@Failure		404		{object}	map[string]string	"Room not found"
+//	@Failure		500		{object}	map[string]string	"Internal server error"
+//	@Router			/restaurants/{id}/rooms/{roomId} [get]
+//	@Security		BearerAuth
 func (h *RestaurantHandler) GetRestaurantRoom(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := primitive.ObjectIDFromHex(idStr)
