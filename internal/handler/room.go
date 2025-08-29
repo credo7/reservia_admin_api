@@ -3,15 +3,15 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/reservia/api/internal/model"
-	"github.com/reservia/api/internal/service"
 	"net/http"
+	"reservia-admin-api/internal/model"
+	"reservia-admin-api/internal/service"
 	"strings"
 
 	chi "github.com/go-chi/chi/v5"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/reservia/api/pkg/logger"
+	"reservia-admin-api/pkg/logger"
 )
 
 type RoomHandler struct {
@@ -449,7 +449,7 @@ func (h *RoomHandler) DisableRoom(w http.ResponseWriter, r *http.Request) {
 //	@Param			restaurantId	path		string							true	"Restaurant ID"
 //	@Param			roomId			path		string							true	"Room ID"
 //	@Param			elements		body		model.SaveElementsRequest		true	"Elements to save"
-//	@Success		200				{object}	map[string]interface{}			"Elements saved successfully"
+//	@Success		200				{array}		model.Element					"Elements saved successfully"
 //	@Failure		400				{object}	map[string]string				"Invalid request"
 //	@Failure		404				{object}	map[string]string				"Room not found"
 //	@Failure		500				{object}	map[string]string				"Internal server error"
@@ -505,11 +505,12 @@ func (h *RoomHandler) SaveElements(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.writeJSON(w, http.StatusOK, map[string]interface{}{
-		"message":  "Elements saved successfully",
-		"elements": updatedRoom.Elements,
-		"count":    len(updatedRoom.Elements),
-	})
+	if updatedRoom == nil {
+		h.writeError(w, http.StatusNotFound, "Room not found after update")
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, updatedRoom.Elements)
 }
 
 // UpdateElement handles PATCH /restaurants/{restaurantId}/rooms/{roomId}/elements/{elementId}.
@@ -523,7 +524,7 @@ func (h *RoomHandler) SaveElements(w http.ResponseWriter, r *http.Request) {
 //	@Param			roomId			path		string							true	"Room ID"
 //	@Param			elementId		path		string							true	"Element ID"
 //	@Param			element			body		model.UpdateElementRequest		true	"Element update data"
-//	@Success		200				{object}	model.Element					"Element updated successfully"
+//	@Success		200				{array}		model.Element					"Element updated successfully"
 //	@Failure		400				{object}	map[string]string				"Invalid request"
 //	@Failure		404				{object}	map[string]string				"Element not found"
 //	@Failure		500				{object}	map[string]string				"Internal server error"
@@ -577,21 +578,21 @@ func (h *RoomHandler) UpdateElement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return the updated element
-	var updatedElement *model.Element
+	// Return the updated room elements
+	var updatedRoom *model.Room
 	for _, room := range updatedRestaurant.Rooms {
 		if room.ID == roomID {
-			for _, element := range room.Elements {
-				if element.ID == elementID {
-					updatedElement = &element
-					break
-				}
-			}
+			updatedRoom = &room
 			break
 		}
 	}
 
-	h.writeJSON(w, http.StatusOK, updatedElement)
+	if updatedRoom == nil {
+		h.writeError(w, http.StatusNotFound, "Room not found after update")
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, updatedRoom.Elements)
 }
 
 // EnableElement handles PATCH /restaurants/{restaurantId}/rooms/{roomId}/elements/{elementId}/enable.
@@ -604,7 +605,7 @@ func (h *RoomHandler) UpdateElement(w http.ResponseWriter, r *http.Request) {
 //	@Param			restaurantId	path		string				true	"Restaurant ID"
 //	@Param			roomId			path		string				true	"Room ID"
 //	@Param			elementId		path		string				true	"Element ID"
-//	@Success		200				{object}	model.Element		"Element enabled successfully"
+//	@Success		200				{array}		model.Element		"Element enabled successfully"
 //	@Failure		400				{object}	map[string]string	"Invalid request"
 //	@Failure		404				{object}	map[string]string	"Element not found"
 //	@Failure		500				{object}	map[string]string	"Internal server error"
@@ -652,21 +653,21 @@ func (h *RoomHandler) EnableElement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return the updated element
-	var updatedElement *model.Element
+	// Return the updated room elements
+	var updatedRoom *model.Room
 	for _, room := range updatedRestaurant.Rooms {
 		if room.ID == roomID {
-			for _, element := range room.Elements {
-				if element.ID == elementID {
-					updatedElement = &element
-					break
-				}
-			}
+			updatedRoom = &room
 			break
 		}
 	}
 
-	h.writeJSON(w, http.StatusOK, updatedElement)
+	if updatedRoom == nil {
+		h.writeError(w, http.StatusNotFound, "Room not found after update")
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, updatedRoom.Elements)
 }
 
 // DisableElement handles PATCH /restaurants/{restaurantId}/rooms/{roomId}/elements/{elementId}/disable.
@@ -679,7 +680,7 @@ func (h *RoomHandler) EnableElement(w http.ResponseWriter, r *http.Request) {
 //	@Param			restaurantId	path		string				true	"Restaurant ID"
 //	@Param			roomId			path		string				true	"Room ID"
 //	@Param			elementId		path		string				true	"Element ID"
-//	@Success		200				{object}	model.Element		"Element disabled successfully"
+//	@Success		200				{array}		model.Element		"Element disabled successfully"
 //	@Failure		400				{object}	map[string]string	"Invalid request"
 //	@Failure		404				{object}	map[string]string	"Element not found"
 //	@Failure		500				{object}	map[string]string	"Internal server error"
@@ -727,21 +728,21 @@ func (h *RoomHandler) DisableElement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return the updated element
-	var updatedElement *model.Element
+	// Return the updated room elements
+	var updatedRoom *model.Room
 	for _, room := range updatedRestaurant.Rooms {
 		if room.ID == roomID {
-			for _, element := range room.Elements {
-				if element.ID == elementID {
-					updatedElement = &element
-					break
-				}
-			}
+			updatedRoom = &room
 			break
 		}
 	}
 
-	h.writeJSON(w, http.StatusOK, updatedElement)
+	if updatedRoom == nil {
+		h.writeError(w, http.StatusNotFound, "Room not found after update")
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, updatedRoom.Elements)
 }
 
 // Helper methods

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/reservia/api/pkg/logger"
+	"reservia-admin-api/pkg/logger"
 )
 
 // LoggingMiddleware provides custom HTTP request logging with path exclusions.

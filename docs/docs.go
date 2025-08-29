@@ -3083,8 +3083,10 @@ const docTemplate = `{
                     "200": {
                         "description": "Elements saved successfully",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Element"
+                            }
                         }
                     },
                     "400": {
@@ -3171,7 +3173,10 @@ const docTemplate = `{
                     "200": {
                         "description": "Element updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/model.Element"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Element"
+                            }
                         }
                     },
                     "400": {
@@ -3249,7 +3254,10 @@ const docTemplate = `{
                     "200": {
                         "description": "Element disabled successfully",
                         "schema": {
-                            "$ref": "#/definitions/model.Element"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Element"
+                            }
                         }
                     },
                     "400": {
@@ -3327,7 +3335,10 @@ const docTemplate = `{
                     "200": {
                         "description": "Element enabled successfully",
                         "schema": {
-                            "$ref": "#/definitions/model.Element"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Element"
+                            }
                         }
                     },
                     "400": {

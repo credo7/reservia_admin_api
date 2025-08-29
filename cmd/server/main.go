@@ -23,16 +23,16 @@ package main
 
 import (
 	"context"
-	"github.com/reservia/api/internal/server"
+	"reservia-admin-api/internal/server"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/reservia/api/pkg/config"
-	"github.com/reservia/api/pkg/database"
-	"github.com/reservia/api/pkg/logger"
+	"reservia-admin-api/pkg/config"
+	"reservia-admin-api/pkg/database"
+	"reservia-admin-api/pkg/logger"
 )
 
 func main() {

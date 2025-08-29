@@ -3,10 +3,10 @@ package server
 
 import (
 	"context"
-	handler "github.com/reservia/api/internal/handler"
-	"github.com/reservia/api/internal/middleware"
-	"github.com/reservia/api/internal/service"
 	"net/http"
+	handler "reservia-admin-api/internal/handler"
+	"reservia-admin-api/internal/middleware"
+	"reservia-admin-api/internal/service"
 	"time"
 
 	chi "github.com/go-chi/chi/v5"
@@ -14,12 +14,12 @@ import (
 	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
 
-	_ "github.com/reservia/api/docs" // Import generated docs
-	"github.com/reservia/api/internal/repository/mongodb"
-	"github.com/reservia/api/pkg/config"
-	"github.com/reservia/api/pkg/database"
-	"github.com/reservia/api/pkg/logger"
-	"github.com/reservia/api/pkg/rabbitmq"
+	_ "reservia-admin-api/docs" // Import generated docs
+	"reservia-admin-api/internal/repository/mongodb"
+	"reservia-admin-api/pkg/config"
+	"reservia-admin-api/pkg/database"
+	"reservia-admin-api/pkg/logger"
+	"reservia-admin-api/pkg/rabbitmq"
 )
 
 // Server represents the HTTP server.

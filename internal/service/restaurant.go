@@ -4,13 +4,13 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/reservia/api/internal/model"
+	"reservia-admin-api/internal/model"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/reservia/api/internal/repository"
-	"github.com/reservia/api/pkg/logger"
+	"reservia-admin-api/internal/repository"
+	"reservia-admin-api/pkg/logger"
 )
 
 // Service handles restaurant-related business logic.
@@ -724,8 +724,11 @@ func (rs *RestaurantService) SaveElements(ctx context.Context, restaurantID prim
 		return nil, fmt.Errorf("room not found")
 	}
 
-	// Update elements - replace all elements with the new ones
-	restaurant.Rooms[roomIndex].Elements = req.Elements
+	// Process elements to ensure they have IDs and correct room IDs
+	processedElements := rs.processElementsWithIDs(req.Elements, roomID)
+
+	// Update elements - replace all elements with the processed ones
+	restaurant.Rooms[roomIndex].Elements = processedElements
 	restaurant.UpdatedAt = time.Now()
 
 	// Update restaurant in database
@@ -760,11 +763,27 @@ func (rs *RestaurantService) UpdateElement(ctx context.Context, restaurantID pri
 		return nil, fmt.Errorf("room not found")
 	}
 
-	// Find the element to update
+	// Find the element to update (check main elements first, then seats within elements)
 	elementIndex := -1
+	seatIndex := -1
+	var isElementSeat bool
+
+	// First, check if it's a main element
 	for i, element := range restaurant.Rooms[roomIndex].Elements {
 		if element.ID == elementID {
 			elementIndex = i
+			break
+		}
+		// If not found as main element, check if it's a seat within this element
+		for j, seat := range element.Seats {
+			if seat.ID == elementID {
+				elementIndex = i
+				seatIndex = j
+				isElementSeat = true
+				break
+			}
+		}
+		if isElementSeat {
 			break
 		}
 	}
@@ -772,8 +791,13 @@ func (rs *RestaurantService) UpdateElement(ctx context.Context, restaurantID pri
 		return nil, fmt.Errorf("element not found")
 	}
 
-	// Update element fields
-	element := &restaurant.Rooms[roomIndex].Elements[elementIndex]
+	// Update element or seat fields
+	var element *model.Element
+	if isElementSeat {
+		element = &restaurant.Rooms[roomIndex].Elements[elementIndex].Seats[seatIndex]
+	} else {
+		element = &restaurant.Rooms[roomIndex].Elements[elementIndex]
+	}
 	if req.Type != nil {
 		element.Type = *req.Type
 	}
@@ -848,11 +872,27 @@ func (rs *RestaurantService) EnableElement(ctx context.Context, restaurantID pri
 		return nil, fmt.Errorf("room not found")
 	}
 
-	// Find the element to enable
+	// Find the element to enable (check main elements first, then seats within elements)
 	elementIndex := -1
+	seatIndex := -1
+	var isElementSeat bool
+
+	// First, check if it's a main element
 	for i, element := range restaurant.Rooms[roomIndex].Elements {
 		if element.ID == elementID {
 			elementIndex = i
+			break
+		}
+		// If not found as main element, check if it's a seat within this element
+		for j, seat := range element.Seats {
+			if seat.ID == elementID {
+				elementIndex = i
+				seatIndex = j
+				isElementSeat = true
+				break
+			}
+		}
+		if isElementSeat {
 			break
 		}
 	}
@@ -860,8 +900,12 @@ func (rs *RestaurantService) EnableElement(ctx context.Context, restaurantID pri
 		return nil, fmt.Errorf("element not found")
 	}
 
-	// Enable the element
-	restaurant.Rooms[roomIndex].Elements[elementIndex].IsEnabled = true
+	// Enable the element or seat
+	if isElementSeat {
+		restaurant.Rooms[roomIndex].Elements[elementIndex].Seats[seatIndex].IsEnabled = true
+	} else {
+		restaurant.Rooms[roomIndex].Elements[elementIndex].IsEnabled = true
+	}
 	restaurant.UpdatedAt = time.Now()
 
 	// Update restaurant in database
@@ -896,11 +940,27 @@ func (rs *RestaurantService) DisableElement(ctx context.Context, restaurantID pr
 		return nil, fmt.Errorf("room not found")
 	}
 
-	// Find the element to disable
+	// Find the element to disable (check main elements first, then seats within elements)
 	elementIndex := -1
+	seatIndex := -1
+	var isElementSeat bool
+
+	// First, check if it's a main element
 	for i, element := range restaurant.Rooms[roomIndex].Elements {
 		if element.ID == elementID {
 			elementIndex = i
+			break
+		}
+		// If not found as main element, check if it's a seat within this element
+		for j, seat := range element.Seats {
+			if seat.ID == elementID {
+				elementIndex = i
+				seatIndex = j
+				isElementSeat = true
+				break
+			}
+		}
+		if isElementSeat {
 			break
 		}
 	}
@@ -908,8 +968,12 @@ func (rs *RestaurantService) DisableElement(ctx context.Context, restaurantID pr
 		return nil, fmt.Errorf("element not found")
 	}
 
-	// Disable the element
-	restaurant.Rooms[roomIndex].Elements[elementIndex].IsEnabled = false
+	// Disable the element or seat
+	if isElementSeat {
+		restaurant.Rooms[roomIndex].Elements[elementIndex].Seats[seatIndex].IsEnabled = false
+	} else {
+		restaurant.Rooms[roomIndex].Elements[elementIndex].IsEnabled = false
+	}
 	restaurant.UpdatedAt = time.Now()
 
 	// Update restaurant in database
@@ -919,4 +983,34 @@ func (rs *RestaurantService) DisableElement(ctx context.Context, restaurantID pr
 
 	rs.logger.Info("Element disabled successfully", "restaurant_id", restaurant.ID.Hex(), "room_id", roomID, "element_id", elementID)
 	return restaurant, nil
+}
+
+// processElementsWithIDs processes elements to ensure they have IDs and correct room IDs.
+// This helper function generates random IDs for elements and seats if they are empty.
+func (rs *RestaurantService) processElementsWithIDs(elements []model.Element, roomID primitive.ObjectID) []model.Element {
+	processedElements := make([]model.Element, len(elements))
+	for i, element := range elements {
+		processedElements[i] = element
+		
+		// Generate ID if empty
+		if processedElements[i].ID.IsZero() {
+			processedElements[i].ID = primitive.NewObjectID()
+		}
+		
+		// Set room ID
+		processedElements[i].RoomID = roomID
+		
+		// Process seats if they exist
+		if len(processedElements[i].Seats) > 0 {
+			for j := range processedElements[i].Seats {
+				// Generate ID for seat if empty
+				if processedElements[i].Seats[j].ID.IsZero() {
+					processedElements[i].Seats[j].ID = primitive.NewObjectID()
+				}
+				// Set room ID for seat
+				processedElements[i].Seats[j].RoomID = roomID
+			}
+		}
+	}
+	return processedElements
 }

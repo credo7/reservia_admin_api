@@ -4,9 +4,9 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/reservia/api/internal/middleware"
-	"github.com/reservia/api/internal/model"
-	"github.com/reservia/api/internal/service"
+	"reservia-admin-api/internal/middleware"
+	"reservia-admin-api/internal/model"
+	"reservia-admin-api/internal/service"
 	"net/http"
 	"strings"
 	"time"
@@ -14,8 +14,8 @@ import (
 	chi "github.com/go-chi/chi/v5"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/reservia/api/pkg/logger"
-	"github.com/reservia/api/pkg/validator"
+	"reservia-admin-api/pkg/logger"
+	"reservia-admin-api/pkg/validator"
 )
 
 // RestaurantHandler handles restaurant-related HTTP requests.

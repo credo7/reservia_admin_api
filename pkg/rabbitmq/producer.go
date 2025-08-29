@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/reservia/api/pkg/logger"
+	"reservia-admin-api/pkg/logger"
 	"github.com/streadway/amqp"
 )
 
@@ -108,13 +108,13 @@ func (p *Producer) SendAuthEmail(queueName, email, code string) error {
 }
 
 // SendEmployeeRegisterEmail sends an employee registration email task.
-func (p *Producer) SendEmployeeRegisterEmail(queueName, email, fullName, employeeID, code string) error {
+func (p *Producer) SendEmployeeRegisterEmail(queueName, email, fullName, codeRequestID, code string) error {
 	task := EmailTask{
 		Type: "employee_register_email",
 		Data: map[string]interface{}{
 			"email":     email,
 			"full_name": fullName,
-			"id":        employeeID,
+			"id":        codeRequestID,
 			"code":      code,
 		},
 	}

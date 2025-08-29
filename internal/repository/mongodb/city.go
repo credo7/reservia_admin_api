@@ -3,13 +3,13 @@ package mongodb
 
 import (
 	"context"
-	"github.com/reservia/api/internal/model"
+	"reservia-admin-api/internal/model"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/reservia/api/internal/repository"
+	"reservia-admin-api/internal/repository"
 )
 
 // CityRepository implements the city repository interface using MongoDB.

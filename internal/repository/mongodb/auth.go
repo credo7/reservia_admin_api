@@ -4,14 +4,14 @@ package mongodb
 import (
 	"context"
 	"fmt"
-	"github.com/reservia/api/internal/model"
+	"reservia-admin-api/internal/model"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/reservia/api/internal/repository"
+	"reservia-admin-api/internal/repository"
 )
 
 // AuthRepository implements the auth repository interface using MongoDB.

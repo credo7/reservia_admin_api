@@ -4,7 +4,7 @@ package repository
 import (
 	"context"
 	"time"
-	"github.com/reservia/api/internal/model"
+	"reservia-admin-api/internal/model"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

@@ -8,11 +8,11 @@ import (
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
-	"github.com/reservia/api/internal/model"
-	"github.com/reservia/api/internal/repository"
-	"github.com/reservia/api/pkg/config"
-	"github.com/reservia/api/pkg/logger"
-	"github.com/reservia/api/pkg/rabbitmq"
+	"reservia-admin-api/internal/model"
+	"reservia-admin-api/internal/repository"
+	"reservia-admin-api/pkg/config"
+	"reservia-admin-api/pkg/logger"
+	"reservia-admin-api/pkg/rabbitmq"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

@@ -1,4 +1,4 @@
-module github.com/reservia/api
+module reservia-admin-api
 
 go 1.23.0
 

@@ -6,10 +6,10 @@ import (
 	"net/http"
 
 	chi "github.com/go-chi/chi/v5"
-	"github.com/reservia/api/internal/middleware"
-	"github.com/reservia/api/internal/model"
-	"github.com/reservia/api/internal/service"
-	"github.com/reservia/api/pkg/logger"
+	"reservia-admin-api/internal/middleware"
+	"reservia-admin-api/internal/model"
+	"reservia-admin-api/internal/service"
+	"reservia-admin-api/pkg/logger"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

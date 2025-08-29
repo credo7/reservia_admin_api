@@ -3,7 +3,7 @@ package mongodb
 
 import (
 	"context"
-	"github.com/reservia/api/internal/model"
+	"reservia-admin-api/internal/model"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/reservia/api/internal/repository"
+	"reservia-admin-api/internal/repository"
 )
 
 // EmployeeRepository implements the employee repository interface using MongoDB.

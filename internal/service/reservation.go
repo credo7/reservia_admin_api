@@ -10,9 +10,9 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/reservia/api/internal/model"
-	"github.com/reservia/api/internal/repository"
-	"github.com/reservia/api/pkg/logger"
+	"reservia-admin-api/internal/model"
+	"reservia-admin-api/internal/repository"
+	"reservia-admin-api/pkg/logger"
 )
 
 // ReservationService handles reservation-related business logic.

@@ -2858,8 +2858,9 @@ paths:
         "200":
           description: Elements saved successfully
           schema:
-            additionalProperties: true
-            type: object
+            items:
+              $ref: '#/definitions/model.Element'
+            type: array
         "400":
           description: Invalid request
           schema:
@@ -2916,7 +2917,9 @@ paths:
         "200":
           description: Element updated successfully
           schema:
-            $ref: '#/definitions/model.Element'
+            items:
+              $ref: '#/definitions/model.Element'
+            type: array
         "400":
           description: Invalid request
           schema:
@@ -2967,7 +2970,9 @@ paths:
         "200":
           description: Element disabled successfully
           schema:
-            $ref: '#/definitions/model.Element'
+            items:
+              $ref: '#/definitions/model.Element'
+            type: array
         "400":
           description: Invalid request
           schema:
@@ -3018,7 +3023,9 @@ paths:
         "200":
           description: Element enabled successfully
           schema:
-            $ref: '#/definitions/model.Element'
+            items:
+              $ref: '#/definitions/model.Element'
+            type: array
         "400":
           description: Invalid request
           schema:
