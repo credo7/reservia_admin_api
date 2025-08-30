@@ -12,7 +12,7 @@ type PendingInvitation struct {
 	Email       string                 `json:"email" example:"john.doe@example.com"`
 	FullName    string                 `json:"fullName" example:"John Doe"`
 	Role        string                 `json:"role" example:"admin"`
-	Restaurants []primitive.ObjectID   `json:"restaurants"`
+	RestaurantID primitive.ObjectID    `json:"restaurantId"`
 	CreatedAt   time.Time              `json:"createdAt" example:"2023-01-01T00:00:00Z"`
 	ExpiresAt   time.Time              `json:"expiresAt" example:"2023-01-02T00:00:00Z"`
 	Status      string                 `json:"status" example:"pending"`

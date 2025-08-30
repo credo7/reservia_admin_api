@@ -210,37 +210,36 @@ func (es *EmployeeService) UpdateEmployeeRoles(ctx context.Context, employeeID p
 		existingRoles[restaurant.RestaurantID] = restaurant
 	}
 
-	// Update or add roles for the specified restaurants
+	// Update or add role for the specified restaurant
 	var newRestaurants []model.EmployeeRestaurant
 	updatedRestaurants := make(map[primitive.ObjectID]bool)
 
-	// First, add/update roles for specified restaurants
-	for _, restaurantID := range req.RestaurantsIDs {
-		if existingRole, exists := existingRoles[restaurantID]; exists {
-			// Don't downgrade existing owners (matches Python logic)
-			if existingRole.Role == model.RoleOwner {
-				es.logger.Warn("Attempted to modify owner role, keeping existing role",
-					"employee_id", employeeID,
-					"restaurant_id", restaurantID,
-					"existing_role", existingRole.Role,
-					"requested_role", req.Role)
-				newRestaurants = append(newRestaurants, existingRole)
-			} else {
-				// Update existing role
-				newRestaurants = append(newRestaurants, model.EmployeeRestaurant{
-					RestaurantID: restaurantID,
-					Role:         req.Role,
-				})
-			}
+	// First, add/update role for specified restaurant
+	restaurantID := req.RestaurantID
+	if existingRole, exists := existingRoles[restaurantID]; exists {
+		// Don't downgrade existing owners (matches Python logic)
+		if existingRole.Role == model.RoleOwner {
+			es.logger.Warn("Attempted to modify owner role, keeping existing role",
+				"employee_id", employeeID,
+				"restaurant_id", restaurantID,
+				"existing_role", existingRole.Role,
+				"requested_role", req.Role)
+			newRestaurants = append(newRestaurants, existingRole)
 		} else {
-			// Add new role
+			// Update existing role
 			newRestaurants = append(newRestaurants, model.EmployeeRestaurant{
 				RestaurantID: restaurantID,
 				Role:         req.Role,
 			})
 		}
-		updatedRestaurants[restaurantID] = true
+	} else {
+		// Add new role
+		newRestaurants = append(newRestaurants, model.EmployeeRestaurant{
+			RestaurantID: restaurantID,
+			Role:         req.Role,
+		})
 	}
+	updatedRestaurants[restaurantID] = true
 
 	// Keep existing roles for restaurants not in the update request
 	for _, restaurant := range updatedEmployee.Restaurants {
@@ -258,7 +257,7 @@ func (es *EmployeeService) UpdateEmployeeRoles(ctx context.Context, employeeID p
 
 	es.logger.Info("Employee roles updated successfully",
 		"employee_id", employeeID.Hex(),
-		"updated_restaurants", len(req.RestaurantsIDs),
+		"updated_restaurant", req.RestaurantID,
 		"new_role", req.Role)
 	return &updatedEmployee, nil
 }

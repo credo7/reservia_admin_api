@@ -8,33 +8,35 @@ import (
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reservia-admin-api/internal/model"
 	"reservia-admin-api/internal/repository"
 	"reservia-admin-api/pkg/config"
 	"reservia-admin-api/pkg/logger"
 	"reservia-admin-api/pkg/rabbitmq"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // AuthService handles authentication business logic.
 type AuthService struct {
-	authRepo      repository.AuthRepository
-	employeeRepo  repository.EmployeeRepository
-	emailProducer *rabbitmq.Producer
-	queueName     string
-	config        *config.Config
-	logger        logger.Logger
+	authRepo       repository.AuthRepository
+	employeeRepo   repository.EmployeeRepository
+	restaurantRepo repository.RestaurantRepository
+	emailProducer  *rabbitmq.Producer
+	queueName      string
+	config         *config.Config
+	logger         logger.Logger
 }
 
 // NewAuthService creates a new auth service.
-func NewAuthService(authRepo repository.AuthRepository, employeeRepo repository.EmployeeRepository, emailProducer *rabbitmq.Producer, queueName string, cfg *config.Config, logger logger.Logger) *AuthService {
+func NewAuthService(authRepo repository.AuthRepository, employeeRepo repository.EmployeeRepository, restaurantRepo repository.RestaurantRepository, emailProducer *rabbitmq.Producer, queueName string, cfg *config.Config, logger logger.Logger) *AuthService {
 	return &AuthService{
-		authRepo:      authRepo,
-		employeeRepo:  employeeRepo,
-		emailProducer: emailProducer,
-		queueName:     queueName,
-		config:        cfg,
-		logger:        logger,
+		authRepo:       authRepo,
+		employeeRepo:   employeeRepo,
+		restaurantRepo: restaurantRepo,
+		emailProducer:  emailProducer,
+		queueName:      queueName,
+		config:         cfg,
+		logger:         logger,
 	}
 }
 
@@ -418,14 +420,7 @@ func (as *AuthService) RegisterEmployee(ctx context.Context, codeRequestID, code
 		return nil, fmt.Errorf("invitation was already used")
 	}
 
-	// Create restaurant associations from invitation (matches Python UserRestaurantSchema creation)
-	newRestaurants := make([]model.EmployeeRestaurant, 0, len(empRegCode.RestaurantsIDs))
-	for _, restaurantID := range empRegCode.RestaurantsIDs {
-		newRestaurants = append(newRestaurants, model.EmployeeRestaurant{
-			RestaurantID: restaurantID,
-			Role:         model.Role(empRegCode.Role),
-		})
-	}
+	// Create restaurant association from invitation (matches Python UserRestaurantSchema creation)
 
 	// Check if employee already exists
 	existingEmployee, err := as.employeeRepo.GetByEmail(ctx, empRegCode.Email)
@@ -441,11 +436,12 @@ func (as *AuthService) RegisterEmployee(ctx context.Context, codeRequestID, code
 			existingRestaurantMap[existingRest.RestaurantID] = true
 		}
 
-		// Add only new restaurants that don't already exist
-		for _, newRest := range newRestaurants {
-			if !existingRestaurantMap[newRest.RestaurantID] {
-				existingEmployee.Restaurants = append(existingEmployee.Restaurants, newRest)
-			}
+		// Add the new restaurant if it doesn't already exist
+		if !existingRestaurantMap[empRegCode.RestaurantID] {
+			existingEmployee.Restaurants = append(existingEmployee.Restaurants, model.EmployeeRestaurant{
+				RestaurantID: empRegCode.RestaurantID,
+				Role:         model.Role(empRegCode.Role),
+			})
 		}
 
 		// Update employee with new restaurants
@@ -462,12 +458,17 @@ func (as *AuthService) RegisterEmployee(ctx context.Context, codeRequestID, code
 		as.logger.Info("Creating new employee from invitation", "email", empRegCode.Email)
 
 		newEmployee := &model.Employee{
-			ID:          primitive.NewObjectID(),
-			FullName:    empRegCode.FullName,
-			Email:       empRegCode.Email,
-			Restaurants: newRestaurants,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			ID:       primitive.NewObjectID(),
+			FullName: empRegCode.FullName,
+			Email:    empRegCode.Email,
+			Restaurants: []model.EmployeeRestaurant{
+				{
+					RestaurantID: empRegCode.RestaurantID,
+					Role:         model.Role(empRegCode.Role),
+				},
+			},
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 
 		if err := as.employeeRepo.Create(ctx, newEmployee); err != nil {
@@ -548,7 +549,7 @@ func (as *AuthService) ValidateToken(tokenString string) (primitive.ObjectID, er
 
 // InviteEmployee creates an employee invitation (matches Python EmployeeService.add -> _send_employee_invitation).
 func (as *AuthService) InviteEmployee(ctx context.Context, req *model.CreateEmployeeInvitationRequest) (*model.AuthInitResponse, error) {
-	as.logger.Info("Creating employee invitation", "email", req.Email, "restaurants", req.RestaurantsIDs)
+	as.logger.Info("Creating employee invitation", "email", req.Email, "restaurant_id", req.RestaurantID)
 
 	// Validate role
 	role := model.Role(req.Role)
@@ -572,15 +573,15 @@ func (as *AuthService) InviteEmployee(ctx context.Context, req *model.CreateEmpl
 
 	// Create employee registration code (matches Python CreateActionRequestSchema with REGISTER_EMPLOYEE action)
 	empRegCode := &model.EmployeeRegistrationCode{
-		ID:             primitive.NewObjectID(),
-		Email:          req.Email,
-		FullName:       req.FullName,
-		RestaurantsIDs: req.RestaurantsIDs,
-		Role:           req.Role,
-		Code:           invitationCode,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
-		IsUsed:         false,
+		ID:           primitive.NewObjectID(),
+		Email:        req.Email,
+		FullName:     req.FullName,
+		RestaurantID: req.RestaurantID,
+		Role:         req.Role,
+		Code:         invitationCode,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+		IsUsed:       false,
 	}
 
 	// Save invitation to database
@@ -589,13 +590,22 @@ func (as *AuthService) InviteEmployee(ctx context.Context, req *model.CreateEmpl
 		return nil, fmt.Errorf("failed to create invitation")
 	}
 
-	// Send invitation email via RabbitMQ (matches Python send_employee_register_email_task.delay)
-	if as.emailProducer != nil {
-		if err := as.emailProducer.SendEmployeeRegisterEmail(as.queueName, req.Email, req.FullName, empRegCode.ID.Hex(), invitationCode); err != nil {
-			as.logger.Error("Failed to send employee invitation email", "email", req.Email, "error", err)
-			// Note: We don't return error here as the invitation is saved and can be resent
-		} else {
-			as.logger.Info("Employee invitation email task sent", "email", req.Email)
+	// Get restaurant details for email
+	restaurant, err := as.restaurantRepo.GetByID(ctx, req.RestaurantID)
+	if err != nil {
+		as.logger.Error("Failed to get restaurant for invitation email", "restaurant_id", req.RestaurantID, "error", err)
+		// Continue without sending email, invitation is still saved
+	} else {
+		// Send invitation email via RabbitMQ (matches Python send_employee_register_email_task.delay)
+		if as.emailProducer != nil {
+			if err := as.emailProducer.SendEmployeeInvitationEmail(
+				as.queueName, req.Email, req.FullName, invitationCode, empRegCode.ID.Hex(), restaurant.Name, restaurant.City, restaurant.Address,
+			); err != nil {
+				as.logger.Error("Failed to send employee invitation email", "email", req.Email, "error", err)
+				// Note: We don't return error here as the invitation is saved and can be resent
+			} else {
+				as.logger.Info("Employee invitation email task sent", "email", req.Email)
+			}
 		}
 	}
 
@@ -840,7 +850,7 @@ func (as *AuthService) ExtendInvitation(ctx context.Context, invitationID string
 		ID:             primitive.NewObjectID(),
 		Email:          oldInvitation.Email,
 		FullName:       oldInvitation.FullName,
-		RestaurantsIDs: oldInvitation.RestaurantsIDs,
+		RestaurantID: oldInvitation.RestaurantID,
 		Role:           oldInvitation.Role,
 		Code:           newInvitationCode,
 		CreatedAt:      time.Now(), // This extends the expiration
@@ -926,8 +936,8 @@ func (as *AuthService) UpdateInvitation(ctx context.Context, invitationID string
 	if updates.Role != "" && updates.Role != existingInvitation.Role {
 		existingInvitation.Role = updates.Role
 	}
-	if len(updates.RestaurantsIDs) > 0 {
-		existingInvitation.RestaurantsIDs = updates.RestaurantsIDs
+	if !updates.RestaurantID.IsZero() {
+		existingInvitation.RestaurantID = updates.RestaurantID
 	}
 
 	// Update in database

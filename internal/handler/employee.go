@@ -6,11 +6,11 @@ import (
 	"net/http"
 
 	chi "github.com/go-chi/chi/v5"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reservia-admin-api/internal/middleware"
 	"reservia-admin-api/internal/model"
 	"reservia-admin-api/internal/service"
 	"reservia-admin-api/pkg/logger"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // EmployeeHandler handles employee-related HTTP requests.
@@ -40,7 +40,7 @@ func NewEmployeeHandler(employeeService *service.EmployeeService, authService *s
 //	@Success		201			{object}	model.AuthInitResponse					"Invitation created successfully"
 //	@Failure		400			{object}	map[string]string						"Invalid request body"
 //	@Failure		500			{object}	map[string]string						"Internal server error"
-//	@Router			/employees/invite [post]
+//	@Router			/employees/invitations [post]
 //	@Security		BearerAuth
 func (h *EmployeeHandler) InviteEmployee(w http.ResponseWriter, r *http.Request) {
 	var req model.CreateEmployeeInvitationRequest
@@ -57,13 +57,13 @@ func (h *EmployeeHandler) InviteEmployee(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Check if employee has permission to manage employees for the specified restaurants
-	if !employee.HasPermissionForRestaurants(model.PermissionManageEmployees, req.RestaurantsIDs) {
-		h.logger.Warn("Employee attempted to invite to restaurants without permission",
+	// Check if employee has permission to manage employees for the specified restaurant
+	if !employee.HasPermissionForRestaurant(model.PermissionManageEmployees, req.RestaurantID) {
+		h.logger.Warn("Employee attempted to invite to restaurant without permission",
 			"employee_id", employee.ID,
 			"permission", model.PermissionManageEmployees,
-			"restaurants", req.RestaurantsIDs)
-		h.writeError(w, http.StatusForbidden, "You don't have permission to invite employees to the specified restaurants")
+			"restaurant", req.RestaurantID)
+		h.writeError(w, http.StatusForbidden, "You don't have permission to invite employees to this restaurant")
 		return
 	}
 
@@ -82,7 +82,7 @@ func (h *EmployeeHandler) InviteEmployee(w http.ResponseWriter, r *http.Request)
 		"inviter_id", employee.ID,
 		"email", req.Email,
 		"invitation_id", invitationResponse.CodeRequestID,
-		"restaurants_count", len(req.RestaurantsIDs))
+		"restaurant_id", req.RestaurantID)
 	h.writeJSON(w, http.StatusCreated, invitationResponse)
 }
 
@@ -234,14 +234,14 @@ func (h *EmployeeHandler) UpdateEmployee(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Validate that requester has ManageEmployees permission for all specified restaurants
-	if !requester.HasPermissionForRestaurants(model.PermissionManageEmployees, req.RestaurantsIDs) {
+	// Validate that requester has ManageEmployees permission for the specified restaurant
+	if !requester.HasPermissionForRestaurant(model.PermissionManageEmployees, req.RestaurantID) {
 		h.logger.Warn("Employee attempted to assign roles without ManageEmployees permission",
 			"requester_id", requester.ID,
 			"target_employee_id", targetEmployee.ID,
-			"requested_restaurants", req.RestaurantsIDs,
+			"requested_restaurant", req.RestaurantID,
 			"requested_role", req.Role)
-		h.writeError(w, http.StatusForbidden, "Access denied - you don't have ManageEmployees permission for the specified restaurants")
+		h.writeError(w, http.StatusForbidden, "Access denied - you don't have ManageEmployees permission for the specified restaurant")
 		return
 	}
 
@@ -264,7 +264,7 @@ func (h *EmployeeHandler) UpdateEmployee(w http.ResponseWriter, r *http.Request)
 	h.logger.Info("Employee roles updated successfully",
 		"requester_id", requester.ID,
 		"target_employee_id", targetEmployee.ID,
-		"updated_restaurants", len(req.RestaurantsIDs),
+		"updated_restaurant", req.RestaurantID,
 		"new_role", req.Role,
 		"visible_restaurants", len(filteredEmployee.Restaurants))
 	h.writeJSON(w, http.StatusOK, filteredEmployee)
@@ -446,7 +446,7 @@ func (h *EmployeeHandler) GetPendingInvitations(w http.ResponseWriter, r *http.R
 			Email:       code.Email,
 			FullName:    code.FullName,
 			Role:        code.Role,
-			Restaurants: code.RestaurantsIDs,
+			RestaurantID: code.RestaurantID,
 			CreatedAt:   code.CreatedAt,
 			ExpiresAt:   expiresAt,
 			Status:      "pending",
@@ -562,45 +562,33 @@ func (h *EmployeeHandler) ExtendInvitation(w http.ResponseWriter, r *http.Reques
 //	@Router			/employees/invitations [patch]
 //	@Security		BearerAuth
 func (h *EmployeeHandler) UpdateInvitation(w http.ResponseWriter, r *http.Request) {
-	var reqData map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&reqData); err != nil {
+	var req model.UpdateEmployeeInvitationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.writeError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	invitationID, ok := reqData["invitationId"].(string)
-	if !ok || invitationID == "" {
+	// Validate invitation ID - primitive.ObjectID will be zero if not provided
+	if req.InvitationID.IsZero() {
 		h.writeError(w, http.StatusBadRequest, "Invitation ID is required")
 		return
 	}
 
-	// Convert the map to CreateEmployeeInvitationRequest
-	updates := &model.CreateEmployeeInvitationRequest{}
-
-	if email, ok := reqData["email"].(string); ok {
-		updates.Email = email
+	// Convert to CreateEmployeeInvitationRequest for the service
+	updates := &model.CreateEmployeeInvitationRequest{
+		Email:    req.Email,
+		FullName: req.FullName,
+		Role:     req.Role,
 	}
-	if fullName, ok := reqData["fullName"].(string); ok {
-		updates.FullName = fullName
-	}
-	if role, ok := reqData["role"].(string); ok {
-		updates.Role = role
-	}
-	if restaurantsData, ok := reqData["restaurantsIds"].([]interface{}); ok {
-		restaurantIDs := make([]primitive.ObjectID, 0, len(restaurantsData))
-		for _, id := range restaurantsData {
-			if idStr, ok := id.(string); ok {
-				if objID, err := primitive.ObjectIDFromHex(idStr); err == nil {
-					restaurantIDs = append(restaurantIDs, objID)
-				}
-			}
-		}
-		updates.RestaurantsIDs = restaurantIDs
+	
+	// Only set RestaurantID if provided
+	if req.RestaurantID != nil {
+		updates.RestaurantID = *req.RestaurantID
 	}
 
-	updatedInvitation, err := h.authService.UpdateInvitation(r.Context(), invitationID, updates)
+	updatedInvitation, err := h.authService.UpdateInvitation(r.Context(), req.InvitationID.Hex(), updates)
 	if err != nil {
-		h.logger.Error("Failed to update invitation", "invitation_id", invitationID, "error", err)
+		h.logger.Error("Failed to update invitation", "invitation_id", req.InvitationID.Hex(), "error", err)
 		if err.Error() == "invitation not found" {
 			h.writeError(w, http.StatusNotFound, "Invitation not found")
 		} else if err.Error() == "invitation has already been used" || err.Error() == "invitation has already expired" {
@@ -616,12 +604,12 @@ func (h *EmployeeHandler) UpdateInvitation(w http.ResponseWriter, r *http.Reques
 		"email":        updatedInvitation.Email,
 		"fullName":     updatedInvitation.FullName,
 		"role":         updatedInvitation.Role,
-		"restaurants":  updatedInvitation.RestaurantsIDs,
+		"restaurantId": updatedInvitation.RestaurantID,
 		"message":      "Invitation updated successfully",
 		"updatedAt":    updatedInvitation.UpdatedAt,
 	}
 
-	h.logger.Info("Invitation updated successfully", "invitation_id", invitationID)
+	h.logger.Info("Invitation updated successfully", "invitation_id", req.InvitationID.Hex())
 	h.writeJSON(w, http.StatusOK, response)
 }
 

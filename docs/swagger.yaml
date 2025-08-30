@@ -2,15 +2,12 @@ basePath: /api/admin
 definitions:
   model.AdminUpdateEmployeeRequest:
     properties:
-      restaurantsIds:
-        items:
-          type: string
-        minItems: 1
-        type: array
+      restaurantId:
+        type: string
       role:
         $ref: '#/definitions/model.Role'
     required:
-    - restaurantsIds
+    - restaurantId
     - role
     type: object
   model.AuthInitResponse:
@@ -43,11 +40,8 @@ definitions:
         maxLength: 100
         minLength: 2
         type: string
-      restaurantsIds:
-        items:
-          type: string
-        minItems: 1
-        type: array
+      restaurantId:
+        type: string
       role:
         enum:
         - admin
@@ -57,7 +51,7 @@ definitions:
     required:
     - email
     - fullName
-    - restaurantsIds
+    - restaurantId
     - role
     type: object
   model.CreateReservationRequest:
@@ -385,10 +379,8 @@ definitions:
       id:
         example: 507f1f77bcf86cd799439011
         type: string
-      restaurants:
-        items:
-          type: string
-        type: array
+      restaurantId:
+        type: string
       role:
         example: admin
         type: string
@@ -800,8 +792,6 @@ definitions:
       description:
         maxLength: 500
         type: string
-      email:
-        type: string
       isActive:
         type: boolean
       name:
@@ -810,16 +800,6 @@ definitions:
         type: string
       phone:
         type: string
-      rooms:
-        items:
-          $ref: '#/definitions/model.Room'
-        type: array
-      settings:
-        $ref: '#/definitions/model.Settings'
-      utcOffset:
-        maximum: 14
-        minimum: -12
-        type: integer
     type: object
   model.UpdateRestaurantSettingsRequest:
     properties:
@@ -1405,6 +1385,42 @@ paths:
       summary: Update employee invitation
       tags:
       - employees
+    post:
+      consumes:
+      - application/json
+      description: Create an invitation for a new employee to join specified restaurants
+        (matches Python POST /employees)
+      parameters:
+      - description: Employee invitation data
+        in: body
+        name: invitation
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateEmployeeInvitationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Invitation created successfully
+          schema:
+            $ref: '#/definitions/model.AuthInitResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create employee invitation
+      tags:
+      - employees
   /employees/invitations/{invitationId}:
     delete:
       consumes:
@@ -1513,43 +1529,6 @@ paths:
       security:
       - BearerAuth: []
       summary: Get pending employee invitations
-      tags:
-      - employees
-  /employees/invite:
-    post:
-      consumes:
-      - application/json
-      description: Create an invitation for a new employee to join specified restaurants
-        (matches Python POST /employees)
-      parameters:
-      - description: Employee invitation data
-        in: body
-        name: invitation
-        required: true
-        schema:
-          $ref: '#/definitions/model.CreateEmployeeInvitationRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Invitation created successfully
-          schema:
-            $ref: '#/definitions/model.AuthInitResponse'
-        "400":
-          description: Invalid request body
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Create employee invitation
       tags:
       - employees
   /employees/me:

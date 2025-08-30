@@ -112,15 +112,11 @@ type CreateRestaurantRequest struct {
 
 // UpdateRestaurantRequest represents a request to update a restaurant.
 type UpdateRestaurantRequest struct {
-	Name        *string   `json:"name,omitempty" validate:"omitempty,min=2,max=100"`
-	Address     *string   `json:"address,omitempty" validate:"omitempty,min=5,max=200"`
-	Phone       *string   `json:"phone,omitempty"`
-	Email       *string   `json:"email,omitempty" validate:"omitempty,email"`
-	Description *string   `json:"description,omitempty" validate:"omitempty,max=500"`
-	IsActive    *bool     `json:"isActive,omitempty"`
-	UTCOffset   *int      `json:"utcOffset,omitempty" validate:"omitempty,min=-12,max=14"`
-	Settings    *Settings `json:"settings,omitempty"`
-	Rooms       []Room    `json:"rooms,omitempty"`
+	Name        *string `json:"name,omitempty" validate:"omitempty,min=2,max=100"`
+	Address     *string `json:"address,omitempty" validate:"omitempty,min=5,max=200"`
+	Phone       *string `json:"phone,omitempty"`
+	Description *string `json:"description,omitempty" validate:"omitempty,max=500"`
+	IsActive    *bool   `json:"isActive,omitempty"`
 }
 
 // RestaurantSummary represents a summary response when returning restaurant data (matches Python RestaurantMiniSchema).

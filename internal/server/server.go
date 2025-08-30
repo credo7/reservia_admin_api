@@ -89,7 +89,7 @@ func (s *Server) setupDependencies() {
 	employeeService := service.NewEmployeeService(employeeRepo, s.logger)
 	cityService := service.NewCityService(cityRepo, s.logger)
 	restaurantService := service.NewRestaurantService(restaurantRepo, employeeRepo, cityService, s.logger)
-	authService := service.NewAuthService(authRepo, employeeRepo, emailProducer, s.config.RabbitMQ.QueueName, s.config, s.logger)
+	authService := service.NewAuthService(authRepo, employeeRepo, restaurantRepo, emailProducer, s.config.RabbitMQ.QueueName, s.config, s.logger)
 	reservationService := service.NewReservationService(reservationRepo, restaurantRepo, s.logger)
 	restaurantAvailabilityService := service.NewRestaurantAvailabilityService(restaurantRepo, reservationRepo, s.logger)
 
@@ -209,7 +209,6 @@ func (s *Server) setupEmployeeRoutes(r chi.Router) {
 		r.Use(s.authMiddleware.RequireAuth)
 
 		// Main employee operations
-		r.Post("/invite", s.employeeHandler.InviteEmployee)
 		r.Get("/", s.employeeHandler.ListEmployees)
 
 		// Profile routes must be before /{id} to avoid conflicts
@@ -227,6 +226,7 @@ func (s *Server) setupEmployeeRoutes(r chi.Router) {
 // setupEmployeeInvitationRoutes configures employee invitation management endpoints.
 func (s *Server) setupEmployeeInvitationRoutes(r chi.Router) {
 	r.Route("/invitations", func(r chi.Router) {
+		r.Post("/", s.employeeHandler.InviteEmployee)
 		r.Get("/pending", s.employeeHandler.GetPendingInvitations)
 		r.Delete("/{invitationId}", s.employeeHandler.DeleteInvitation)
 		r.Post("/extend", s.employeeHandler.ExtendInvitation)

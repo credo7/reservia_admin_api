@@ -210,8 +210,8 @@ type CreateEmployeeRequest struct {
 // AdminUpdateEmployeeRequest represents a request to update an employee's role assignments (admin only).
 // This matches the Python PutEmployeeSchema which only allows role management.
 type AdminUpdateEmployeeRequest struct {
-	RestaurantsIDs []primitive.ObjectID `json:"restaurantsIds" validate:"required,min=1"`
-	Role           Role                 `json:"role" validate:"required"`
+	RestaurantID primitive.ObjectID `json:"restaurantId" validate:"required"`
+	Role         Role               `json:"role" validate:"required"`
 }
 
 // UpdateEmployeeRequest represents a request to update an employee's personal information.

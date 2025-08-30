@@ -468,6 +468,61 @@ const docTemplate = `{
             }
         },
         "/employees/invitations": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create an invitation for a new employee to join specified restaurants (matches Python POST /employees)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "employees"
+                ],
+                "summary": "Create employee invitation",
+                "parameters": [
+                    {
+                        "description": "Employee invitation data",
+                        "name": "invitation",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateEmployeeInvitationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Invitation created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.AuthInitResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
             "patch": {
                 "security": [
                     {
@@ -688,63 +743,6 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Invitation not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/employees/invite": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Create an invitation for a new employee to join specified restaurants (matches Python POST /employees)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "employees"
-                ],
-                "summary": "Create employee invitation",
-                "parameters": [
-                    {
-                        "description": "Employee invitation data",
-                        "name": "invitation",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.CreateEmployeeInvitationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Invitation created successfully",
-                        "schema": {
-                            "$ref": "#/definitions/model.AuthInitResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3998,16 +3996,12 @@ const docTemplate = `{
         "model.AdminUpdateEmployeeRequest": {
             "type": "object",
             "required": [
-                "restaurantsIds",
+                "restaurantId",
                 "role"
             ],
             "properties": {
-                "restaurantsIds": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "type": "string"
-                    }
+                "restaurantId": {
+                    "type": "string"
                 },
                 "role": {
                     "$ref": "#/definitions/model.Role"
@@ -4053,7 +4047,7 @@ const docTemplate = `{
             "required": [
                 "email",
                 "fullName",
-                "restaurantsIds",
+                "restaurantId",
                 "role"
             ],
             "properties": {
@@ -4065,12 +4059,8 @@ const docTemplate = `{
                     "maxLength": 100,
                     "minLength": 2
                 },
-                "restaurantsIds": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "type": "string"
-                    }
+                "restaurantId": {
+                    "type": "string"
                 },
                 "role": {
                     "type": "string",
@@ -4526,11 +4516,8 @@ const docTemplate = `{
                     "type": "string",
                     "example": "507f1f77bcf86cd799439011"
                 },
-                "restaurants": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "restaurantId": {
+                    "type": "string"
                 },
                 "role": {
                     "type": "string",
@@ -5138,9 +5125,6 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 500
                 },
-                "email": {
-                    "type": "string"
-                },
                 "isActive": {
                     "type": "boolean"
                 },
@@ -5151,20 +5135,6 @@ const docTemplate = `{
                 },
                 "phone": {
                     "type": "string"
-                },
-                "rooms": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Room"
-                    }
-                },
-                "settings": {
-                    "$ref": "#/definitions/model.Settings"
-                },
-                "utcOffset": {
-                    "type": "integer",
-                    "maximum": 14,
-                    "minimum": -12
                 }
             }
         },

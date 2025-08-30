@@ -98,10 +98,10 @@ type UserInfo struct {
 
 // CreateEmployeeInvitationRequest represents a request to create an employee invitation (matches Python CreateEmployeeSchema).
 type CreateEmployeeInvitationRequest struct {
-	Email          string               `json:"email" validate:"required,email"`
-	FullName       string               `json:"fullName" validate:"required,min=2,max=100"`
-	RestaurantsIDs []primitive.ObjectID `json:"restaurantsIds" validate:"required,min=1"`
-	Role           string               `json:"role" validate:"required,oneof=admin employee owner"`
+	Email        string             `json:"email" validate:"required,email"`
+	FullName     string             `json:"fullName" validate:"required,min=2,max=100"`
+	RestaurantID primitive.ObjectID `json:"restaurantId" validate:"required"`
+	Role         string             `json:"role" validate:"required,oneof=admin employee owner"`
 }
 
 // EmployeeRegistrationResponse represents employee registration information.
@@ -165,25 +165,25 @@ func (vc *LoginVerificationCode) MarkAsUsed() {
 
 // EmployeeRegistrationCode represents an employee invitation code for registration.
 type EmployeeRegistrationCode struct {
-	ID             primitive.ObjectID   `json:"id" bson:"_id,omitempty"`
-	EmployeeID     *primitive.ObjectID  `json:"employeeId,omitempty" bson:"employee_id,omitempty"`
-	Email          string               `json:"email" bson:"email"`
-	FullName       string               `json:"fullName" bson:"full_name"`
-	RestaurantsIDs []primitive.ObjectID `json:"restaurantsIds" bson:"restaurants_ids"`
-	Role           string               `json:"role" bson:"role"`
-	Code           string               `json:"code" bson:"code"`
-	CreatedAt      time.Time            `json:"createdAt" bson:"created_at"`
-	UpdatedAt      time.Time            `json:"updatedAt" bson:"updated_at"`
-	IsUsed         bool                 `json:"isUsed" bson:"is_used"`
+	ID           primitive.ObjectID  `json:"id" bson:"_id,omitempty"`
+	EmployeeID   *primitive.ObjectID `json:"employeeId,omitempty" bson:"employee_id,omitempty"`
+	Email        string              `json:"email" bson:"email"`
+	FullName     string              `json:"fullName" bson:"full_name"`
+	RestaurantID primitive.ObjectID  `json:"restaurantId" bson:"restaurant_id"`
+	Role         string              `json:"role" bson:"role"`
+	Code         string              `json:"code" bson:"code"`
+	CreatedAt    time.Time           `json:"createdAt" bson:"created_at"`
+	UpdatedAt    time.Time           `json:"updatedAt" bson:"updated_at"`
+	IsUsed       bool                `json:"isUsed" bson:"is_used"`
 }
 
 // TelegramVerificationCode represents a Telegram authentication request code.
 type TelegramVerificationCode struct {
-	ID        primitive.ObjectID  `json:"id" bson:"_id,omitempty"`
-	EmployeeID    *primitive.ObjectID `json:"employeeId,omitempty" bson:"employee_id,omitempty"`
-	CreatedAt time.Time           `json:"createdAt" bson:"created_at"`
-	UpdatedAt time.Time           `json:"updatedAt" bson:"updated_at"`
-	IsUsed    bool                `json:"isUsed" bson:"is_used"`
+	ID         primitive.ObjectID  `json:"id" bson:"_id,omitempty"`
+	EmployeeID *primitive.ObjectID `json:"employeeId,omitempty" bson:"employee_id,omitempty"`
+	CreatedAt  time.Time           `json:"createdAt" bson:"created_at"`
+	UpdatedAt  time.Time           `json:"updatedAt" bson:"updated_at"`
+	IsUsed     bool                `json:"isUsed" bson:"is_used"`
 }
 
 // Business logic methods for specific models
@@ -221,12 +221,12 @@ func (ar *ActionRequest) IsCompleted() bool {
 // ActionRequest represents a general action request (adapted from Python ActionRequestSchema for Go/MongoDB).
 type ActionRequest struct {
 	ID             primitive.ObjectID   `json:"id" bson:"_id,omitempty"`
-	EmployeeID         *primitive.ObjectID  `json:"employeeId,omitempty" bson:"employee_id,omitempty"`
+	EmployeeID     *primitive.ObjectID  `json:"employeeId,omitempty" bson:"employee_id,omitempty"`
 	Action         string               `json:"action" bson:"action"`
 	Email          string               `json:"email,omitempty" bson:"email,omitempty"`
 	FullName       string               `json:"fullName,omitempty" bson:"full_name,omitempty"`
 	ReservationID  *primitive.ObjectID  `json:"reservationId,omitempty" bson:"reservation_id,omitempty"`
-	RestaurantsIDs []primitive.ObjectID `json:"restaurantsIds,omitempty" bson:"restaurants_ids,omitempty"`
+	RestaurantID   *primitive.ObjectID `json:"restaurantId,omitempty" bson:"restaurant_id,omitempty"`
 	Role           string               `json:"role,omitempty" bson:"role,omitempty"`
 	Code           string               `json:"code,omitempty" bson:"code,omitempty"`
 	CreatedAt      time.Time            `json:"createdAt" bson:"created_at"`
@@ -244,6 +244,15 @@ const (
 	ActionConnectTelegram  = "CONNECT_TELEGRAM"
 	ActionUpdateEmail      = "UPDATE_EMAIL"
 )
+
+// UpdateEmployeeInvitationRequest represents a request to update an employee invitation.
+type UpdateEmployeeInvitationRequest struct {
+	InvitationID primitive.ObjectID  `json:"invitationId" validate:"required"`
+	Email        string              `json:"email,omitempty" validate:"omitempty,email"`
+	FullName     string              `json:"fullName,omitempty" validate:"omitempty,min=2,max=100"`
+	RestaurantID *primitive.ObjectID `json:"restaurantId,omitempty"`
+	Role         string              `json:"role,omitempty" validate:"omitempty,oneof=admin employee"`
+}
 
 // Constants for token expiration
 const (

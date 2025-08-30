@@ -84,8 +84,8 @@ func (rs *RestaurantService) CreateRestaurant(ctx context.Context, creator *mode
 	// 5. Create restaurant with minimal required data, server-generated values, and defaults
 	newRestaurant := &model.Restaurant{
 		Name:        req.Name,
-		URLName:     urlName, // Auto-generated from name
-		City:        city.Name,        // Auto-resolved from city
+		URLName:     urlName,   // Auto-generated from name
+		City:        city.Name, // Auto-resolved from city
 		Address:     req.Address,
 		Phone:       req.Phone,
 		Email:       "",               // Empty by default, can be set later
@@ -154,6 +154,8 @@ func (rs *RestaurantService) UpdateRestaurant(ctx context.Context, id primitive.
 		return nil, fmt.Errorf("restaurant not found")
 	}
 
+	// TODO: добавить изменение города?
+
 	// Update fields
 	if req.Name != nil {
 		existingRestaurant.Name = *req.Name
@@ -164,23 +166,12 @@ func (rs *RestaurantService) UpdateRestaurant(ctx context.Context, id primitive.
 	if req.Phone != nil {
 		existingRestaurant.Phone = *req.Phone
 	}
-	if req.Email != nil {
-		existingRestaurant.Email = *req.Email
-	}
 	if req.Description != nil {
 		existingRestaurant.Description = *req.Description
 	}
+	// TODO: проверка на активые комнаты / столы
 	if req.IsActive != nil {
 		existingRestaurant.IsActive = *req.IsActive
-	}
-	if req.UTCOffset != nil {
-		existingRestaurant.UTCOffset = *req.UTCOffset
-	}
-	if req.Settings != nil {
-		existingRestaurant.Settings = *req.Settings
-	}
-	if req.Rooms != nil {
-		existingRestaurant.Rooms = req.Rooms
 	}
 
 	existingRestaurant.UpdatedAt = time.Now()
@@ -203,6 +194,9 @@ func (rs *RestaurantService) DeleteRestaurant(ctx context.Context, id primitive.
 	if existingRestaurant == nil {
 		return fmt.Errorf("restaurant not found")
 	}
+
+	// TODO: перед удалением отменить все брони
+	// TODO: Проверку на владельца
 
 	if err := rs.restaurantRepo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("failed to delete restaurant: %w", err)
@@ -392,7 +386,6 @@ func (rs *RestaurantService) DisableRestaurant(ctx context.Context, id primitive
 	rs.logger.Info("Restaurant disabled successfully", "restaurant_id", existingRestaurant.ID.Hex())
 	return existingRestaurant, nil
 }
-
 
 // AddSubURL adds a new sub-URL to a restaurant.
 func (rs *RestaurantService) AddSubURL(ctx context.Context, restaurantID primitive.ObjectID, req *model.CreateSubURLRequest) (*model.Restaurant, error) {
@@ -991,15 +984,15 @@ func (rs *RestaurantService) processElementsWithIDs(elements []model.Element, ro
 	processedElements := make([]model.Element, len(elements))
 	for i, element := range elements {
 		processedElements[i] = element
-		
+
 		// Generate ID if empty
 		if processedElements[i].ID.IsZero() {
 			processedElements[i].ID = primitive.NewObjectID()
 		}
-		
+
 		// Set room ID
 		processedElements[i].RoomID = roomID
-		
+
 		// Process seats if they exist
 		if len(processedElements[i].Seats) > 0 {
 			for j := range processedElements[i].Seats {

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"reservia-admin-api/pkg/logger"
 	"github.com/streadway/amqp"
+	"reservia-admin-api/pkg/logger"
 )
 
 // Producer handles RabbitMQ message publishing.
@@ -116,6 +116,25 @@ func (p *Producer) SendEmployeeRegisterEmail(queueName, email, fullName, codeReq
 			"full_name": fullName,
 			"id":        codeRequestID,
 			"code":      code,
+		},
+	}
+	return p.SendEmailTask(queueName, task)
+}
+
+// SendEmployeeRegisterEmail sends an employee registration email task.
+func (p *Producer) SendEmployeeInvitationEmail(
+	queueName, email, fullName, code, codeRequestID, restaurantName, city, address string,
+) error {
+	task := EmailTask{
+		Type: "employee_invitation_email",
+		Data: map[string]interface{}{
+			"email":           email,
+			"full_name":       fullName,
+			"code":            code,
+			"code_request_id": codeRequestID,
+			"restaurant_name": restaurantName,
+			"city":            city,
+			"address":         address,
 		},
 	}
 	return p.SendEmailTask(queueName, task)
