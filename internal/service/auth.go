@@ -756,8 +756,13 @@ func (as *AuthService) DisconnectTelegram(ctx context.Context, employeeID primit
 		return nil, fmt.Errorf("employee not found")
 	}
 
-	// Remove Telegram ID
+	// Clear all Telegram fields
+	employee.TelegramIsBot = nil
 	employee.TelegramID = nil
+	employee.TelegramChatID = nil
+	employee.TelegramUsername = nil
+	employee.TelegramLang = nil
+	employee.TelegramPremium = nil
 	employee.UpdatedAt = time.Now()
 	if err := as.employeeRepo.Update(ctx, employee); err != nil {
 		as.logger.Error("Failed to disconnect Telegram from employee", "employee_id", employeeID, "error", err)
