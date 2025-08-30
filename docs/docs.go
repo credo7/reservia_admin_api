@@ -4072,27 +4072,21 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "duration",
-                "email",
-                "full_name",
-                "guest_count",
-                "phone",
-                "start_at",
-                "table_id"
+                "fullName",
+                "startAt",
+                "tableId"
             ],
             "properties": {
                 "duration": {
                     "description": "Format: \"2:30\" (2 hours 30 minutes)",
                     "type": "string"
                 },
-                "email": {
-                    "type": "string"
-                },
-                "full_name": {
+                "fullName": {
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 2
                 },
-                "guest_count": {
+                "guestCount": {
                     "type": "integer",
                     "maximum": 20,
                     "minimum": 1
@@ -4100,13 +4094,13 @@ const docTemplate = `{
                 "phone": {
                     "type": "string"
                 },
-                "start_at": {
+                "startAt": {
+                    "$ref": "#/definitions/model.LocalTime"
+                },
+                "tableId": {
                     "type": "string"
                 },
-                "table_id": {
-                    "type": "string"
-                },
-                "user_notes": {
+                "userNotes": {
                     "type": "string",
                     "maxLength": 500
                 }
@@ -4453,6 +4447,14 @@ const docTemplate = `{
                 }
             }
         },
+        "model.LocalTime": {
+            "type": "object",
+            "properties": {
+                "time.Time": {
+                    "type": "string"
+                }
+            }
+        },
         "model.LoginRequest": {
             "type": "object",
             "required": [
@@ -4467,10 +4469,10 @@ const docTemplate = `{
         "model.MarkReservationsAsSeenRequest": {
             "type": "object",
             "properties": {
-                "mark_all_unseen": {
+                "markAllUnseen": {
                     "type": "boolean"
                 },
-                "reservation_ids": {
+                "reservationIds": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -4555,10 +4557,10 @@ const docTemplate = `{
         "model.ReservationCountsResponse": {
             "type": "object",
             "properties": {
-                "pending_count": {
+                "pendingCount": {
                     "type": "integer"
                 },
-                "unseen_count": {
+                "unseenCount": {
                     "type": "integer"
                 }
             }
@@ -4569,28 +4571,28 @@ const docTemplate = `{
                 "code": {
                     "type": "string"
                 },
-                "created_at": {
+                "createdAt": {
                     "type": "string"
                 },
-                "duration_minutes": {
+                "durationMinutes": {
                     "type": "integer"
                 },
                 "email": {
                     "type": "string"
                 },
-                "end_at": {
+                "endAt": {
                     "type": "string"
                 },
-                "full_name": {
+                "fullName": {
                     "type": "string"
                 },
-                "guest_count": {
+                "guestCount": {
                     "type": "integer"
                 },
                 "id": {
                     "type": "string"
                 },
-                "is_active": {
+                "isActive": {
                     "type": "boolean"
                 },
                 "phone": {
@@ -4599,28 +4601,28 @@ const docTemplate = `{
                 "restaurantId": {
                     "type": "string"
                 },
-                "room_id": {
+                "roomId": {
                     "type": "string"
                 },
-                "start_at": {
+                "startAt": {
                     "type": "string"
                 },
                 "status": {
                     "$ref": "#/definitions/model.Status"
                 },
-                "table_id": {
+                "tableId": {
                     "type": "string"
                 },
-                "time_slot": {
+                "timeSlot": {
                     "type": "string"
                 },
-                "updated_at": {
+                "updatedAt": {
                     "type": "string"
                 },
-                "user_id": {
+                "userId": {
                     "type": "string"
                 },
-                "user_notes": {
+                "userNotes": {
                     "type": "string"
                 }
             }
@@ -5067,27 +5069,27 @@ const docTemplate = `{
         "model.UpdateReservationRequest": {
             "type": "object",
             "properties": {
-                "admin_notes": {
+                "adminNotes": {
                     "type": "string"
                 },
-                "cancellation_reason": {
+                "cancellationReason": {
                     "type": "string"
                 },
                 "duration": {
                     "type": "string"
                 },
-                "end_at": {
+                "endAt": {
                     "type": "string"
                 },
-                "guest_count": {
+                "guestCount": {
                     "type": "integer",
                     "maximum": 20,
                     "minimum": 1
                 },
-                "start_at": {
+                "startAt": {
                     "type": "string"
                 },
-                "table_id": {
+                "tableId": {
                     "type": "string"
                 }
             }
@@ -5098,10 +5100,10 @@ const docTemplate = `{
                 "status"
             ],
             "properties": {
-                "admin_notes": {
+                "adminNotes": {
                     "type": "string"
                 },
-                "cancellation_reason": {
+                "cancellationReason": {
                     "type": "string"
                 },
                 "status": {

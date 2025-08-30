@@ -169,32 +169,35 @@ func (r *Restaurant) GetActiveRooms() []Room {
 }
 
 // GetTable returns a table by ID within a specific room.
-func (room *Room) GetTable(tableID primitive.ObjectID) *Table {
-	for i := range room.Tables {
-		if room.Tables[i].ID == tableID {
-			return &room.Tables[i]
+// Searches in Elements array for table-type elements.
+func (room *Room) GetTable(tableID primitive.ObjectID) *Element {
+	for i := range room.Elements {
+		element := &room.Elements[i]
+		if element.Type == ElementTypeTable && element.ID == tableID {
+			return element
 		}
 	}
 	return nil
 }
 
-// GetActiveTables returns all active tables in the room.
-func (room *Room) GetActiveTables() []Table {
-	var activeTables []Table
-	for _, table := range room.Tables {
-		if table.IsEnabled {
-			activeTables = append(activeTables, table)
+// GetActiveTables returns all active table elements in the room.
+func (room *Room) GetActiveTables() []Element {
+	var activeTables []Element
+	for _, element := range room.Elements {
+		if element.Type == ElementTypeTable && element.IsEnabled {
+			activeTables = append(activeTables, element)
 		}
 	}
 	return activeTables
 }
 
-// GetTotalCapacity returns the total capacity of all active tables in the room.
+// GetTotalCapacity returns the total capacity of all active table elements in the room.
 func (room *Room) GetTotalCapacity() int {
 	total := 0
-	for _, table := range room.Tables {
-		if table.IsEnabled {
-			total += table.Capacity
+	for _, element := range room.Elements {
+		if element.Type == ElementTypeTable && element.IsEnabled {
+			// Use seat count as capacity for table elements
+			total += len(element.Seats)
 		}
 	}
 	return total

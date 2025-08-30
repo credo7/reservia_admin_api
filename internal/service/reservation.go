@@ -47,6 +47,11 @@ func (rs *ReservationService) CreateReservation(ctx context.Context, restaurantI
 		return nil, fmt.Errorf("room not found")
 	}
 
+	// Validate table ID is provided
+	if req.TableID.IsZero() {
+		return nil, fmt.Errorf("table ID is required")
+	}
+
 	// Validate table exists and is active
 	table := room.GetTable(req.TableID)
 	if table == nil {
@@ -57,7 +62,7 @@ func (rs *ReservationService) CreateReservation(ctx context.Context, restaurantI
 	}
 
 	// Parse duration and calculate end time
-	endAt, err := rs.parseDurationAndCalculateEndTime(req.StartAt, req.Duration)
+	endAt, err := rs.parseDurationAndCalculateEndTime(req.StartAt.Time, req.Duration)
 	if err != nil {
 		return nil, fmt.Errorf("invalid duration format: %w", err)
 	}
@@ -72,17 +77,16 @@ func (rs *ReservationService) CreateReservation(ctx context.Context, restaurantI
 		RoomID:             roomID,
 		TableID:            req.TableID,
 		FullName:           req.FullName,
-		Email:              req.Email,
 		Phone:              req.Phone,
 		GuestCount:         req.GuestCount,
 		UserNotes:          req.UserNotes,
 		Status:             model.StatusConfirmed, // Admin reservations are automatically confirmed
 		AuthorizeMethod:    model.AuthorizeMethodAdmin,
 		IsUsedForAuth:      false,
-		StartAt:            req.StartAt,
+		StartAt:            req.StartAt.Time,
 		EndAt:              endAt,
 		InitialEndAt:       endAt,
-		WorkingDayDate:     time.Date(req.StartAt.Year(), req.StartAt.Month(), req.StartAt.Day(), 0, 0, 0, 0, req.StartAt.Location()),
+		WorkingDayDate:     time.Date(req.StartAt.Time.Year(), req.StartAt.Time.Month(), req.StartAt.Time.Day(), 0, 0, 0, 0, req.StartAt.Time.Location()),
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
 		AuthorizedAt:       &time.Time{},
@@ -132,39 +136,18 @@ func (rs *ReservationService) GetReservationsByRoom(ctx context.Context, restaur
 		return nil, fmt.Errorf("room not found")
 	}
 
-	// For now, we'll get all reservations for the restaurant and filter by room ID
-	// In a production system, we'd want to add room-specific methods to the repository
-	allReservations, err := rs.reservationRepo.GetByRestaurantID(ctx, restaurantID, 1000, 0) // Get more to filter
+	// Convert map filters to structured filters
+	structuredFilters := rs.convertMapToReservationFilters(filters)
+	structuredFilters.RestaurantID = restaurantID
+	structuredFilters.RoomID = roomID
+
+	// Use the optimized repository method that queries MongoDB directly
+	reservations, err := rs.reservationRepo.GetByRoomID(ctx, restaurantID, roomID, structuredFilters, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get reservations: %w", err)
 	}
 
-	// Filter by room ID
-	var roomReservations []*model.Reservation
-	for _, reservation := range allReservations {
-		if reservation.RoomID == roomID {
-			roomReservations = append(roomReservations, reservation)
-		}
-	}
-
-	// Apply additional filters if provided
-	if len(filters) > 0 {
-		roomReservations = rs.applyFilters(roomReservations, filters)
-	}
-
-	// Apply pagination
-	start := offset
-	end := offset + limit
-
-	if start > len(roomReservations) {
-		return []*model.Reservation{}, nil
-	}
-
-	if end > len(roomReservations) {
-		end = len(roomReservations)
-	}
-
-	return roomReservations[start:end], nil
+	return reservations, nil
 }
 
 // Helper methods
@@ -234,52 +217,45 @@ func (rs *ReservationService) checkForConflicts(ctx context.Context, reservation
 	return conflicts, nil
 }
 
-// applyFilters applies additional filters to reservations.
-func (rs *ReservationService) applyFilters(reservations []*model.Reservation, filters map[string]interface{}) []*model.Reservation {
-	var filtered []*model.Reservation
 
-	for _, reservation := range reservations {
-		include := true
+// convertMapToReservationFilters converts map filters to structured ReservationFilters.
+func (rs *ReservationService) convertMapToReservationFilters(filters map[string]interface{}) model.ReservationFilters {
+	var structuredFilters model.ReservationFilters
 
-		// Filter by status
-		if status, ok := filters["status"].(string); ok && status != "" {
-			if string(reservation.Status) != status {
-				include = false
-			}
-		}
+	// Filter by status
+	if status, ok := filters["status"].(string); ok && status != "" {
+		structuredFilters.Status = status
+	}
 
-		// Filter by table ID
-		if tableIDStr, ok := filters["table_id"].(string); ok && tableIDStr != "" {
-			if tableID, err := primitive.ObjectIDFromHex(tableIDStr); err == nil {
-				if reservation.TableID != tableID {
-					include = false
-				}
-			}
-		}
-
-		// Filter by date (start_at)
-		if startDate, ok := filters["start_date"].(string); ok && startDate != "" {
-			if date, err := time.Parse("2006-01-02", startDate); err == nil {
-				reservationDate := time.Date(reservation.StartAt.Year(), reservation.StartAt.Month(), reservation.StartAt.Day(), 0, 0, 0, 0, reservation.StartAt.Location())
-				if !reservationDate.Equal(date) {
-					include = false
-				}
-			}
-		}
-
-		// Filter by is_seen
-		if isSeen, ok := filters["is_seen"].(bool); ok {
-			if reservation.IsSeen != isSeen {
-				include = false
-			}
-		}
-
-		if include {
-			filtered = append(filtered, reservation)
+	// Filter by table ID
+	if tableIDStr, ok := filters["table_id"].(string); ok && tableIDStr != "" {
+		if tableID, err := primitive.ObjectIDFromHex(tableIDStr); err == nil {
+			structuredFilters.TableID = tableID
 		}
 	}
 
-	return filtered
+	// Filter by start date
+	if startDate, ok := filters["start_date"].(string); ok && startDate != "" {
+		if date, err := time.Parse("2006-01-02", startDate); err == nil {
+			structuredFilters.StartAt = &date
+		}
+	}
+
+	// Filter by end date
+	if endDate, ok := filters["end_date"].(string); ok && endDate != "" {
+		if date, err := time.Parse("2006-01-02", endDate); err == nil {
+			// Set to end of day
+			endOfDay := date.Add(24*time.Hour - time.Nanosecond)
+			structuredFilters.EndAt = &endOfDay
+		}
+	}
+
+	// Filter by is_seen
+	if isSeen, ok := filters["is_seen"].(bool); ok {
+		structuredFilters.IsSeen = &isSeen
+	}
+
+	return structuredFilters
 }
 
 // GetReservationByID retrieves a reservation by ID.

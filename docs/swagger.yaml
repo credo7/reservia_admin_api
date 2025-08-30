@@ -59,33 +59,28 @@ definitions:
       duration:
         description: 'Format: "2:30" (2 hours 30 minutes)'
         type: string
-      email:
-        type: string
-      full_name:
+      fullName:
         maxLength: 100
         minLength: 2
         type: string
-      guest_count:
+      guestCount:
         maximum: 20
         minimum: 1
         type: integer
       phone:
         type: string
-      start_at:
+      startAt:
+        $ref: '#/definitions/model.LocalTime'
+      tableId:
         type: string
-      table_id:
-        type: string
-      user_notes:
+      userNotes:
         maxLength: 500
         type: string
     required:
     - duration
-    - email
-    - full_name
-    - guest_count
-    - phone
-    - start_at
-    - table_id
+    - fullName
+    - startAt
+    - tableId
     type: object
   model.CreateRestaurantRequest:
     properties:
@@ -339,6 +334,11 @@ definitions:
         example: Error message
         type: string
     type: object
+  model.LocalTime:
+    properties:
+      time.Time:
+        type: string
+    type: object
   model.LoginRequest:
     properties:
       email:
@@ -348,9 +348,9 @@ definitions:
     type: object
   model.MarkReservationsAsSeenRequest:
     properties:
-      mark_all_unseen:
+      markAllUnseen:
         type: boolean
-      reservation_ids:
+      reservationIds:
         items:
           type: string
         type: array
@@ -409,50 +409,50 @@ definitions:
     type: object
   model.ReservationCountsResponse:
     properties:
-      pending_count:
+      pendingCount:
         type: integer
-      unseen_count:
+      unseenCount:
         type: integer
     type: object
   model.ReservationResponse:
     properties:
       code:
         type: string
-      created_at:
+      createdAt:
         type: string
-      duration_minutes:
+      durationMinutes:
         type: integer
       email:
         type: string
-      end_at:
+      endAt:
         type: string
-      full_name:
+      fullName:
         type: string
-      guest_count:
+      guestCount:
         type: integer
       id:
         type: string
-      is_active:
+      isActive:
         type: boolean
       phone:
         type: string
       restaurantId:
         type: string
-      room_id:
+      roomId:
         type: string
-      start_at:
+      startAt:
         type: string
       status:
         $ref: '#/definitions/model.Status'
-      table_id:
+      tableId:
         type: string
-      time_slot:
+      timeSlot:
         type: string
-      updated_at:
+      updatedAt:
         type: string
-      user_id:
+      userId:
         type: string
-      user_notes:
+      userNotes:
         type: string
     type: object
   model.ReservationSlot:
@@ -755,28 +755,28 @@ definitions:
     type: object
   model.UpdateReservationRequest:
     properties:
-      admin_notes:
+      adminNotes:
         type: string
-      cancellation_reason:
+      cancellationReason:
         type: string
       duration:
         type: string
-      end_at:
+      endAt:
         type: string
-      guest_count:
+      guestCount:
         maximum: 20
         minimum: 1
         type: integer
-      start_at:
+      startAt:
         type: string
-      table_id:
+      tableId:
         type: string
     type: object
   model.UpdateReservationStatusRequest:
     properties:
-      admin_notes:
+      adminNotes:
         type: string
-      cancellation_reason:
+      cancellationReason:
         type: string
       status:
         $ref: '#/definitions/model.Status'

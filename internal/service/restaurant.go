@@ -559,6 +559,7 @@ func (rs *RestaurantService) UpdateRoom(ctx context.Context, restaurantID primit
 	if req.Name != nil {
 		room.Name = *req.Name
 	}
+	// TODO: Проверка на включенные столики
 	if req.IsEnabled != nil {
 		room.IsEnabled = *req.IsEnabled
 	}

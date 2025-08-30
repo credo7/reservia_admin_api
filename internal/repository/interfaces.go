@@ -80,6 +80,9 @@ type ReservationRepository interface {
 	// GetByRestaurantID retrieves reservations by restaurant ID
 	GetByRestaurantID(ctx context.Context, restaurantID primitive.ObjectID, limit, offset int) ([]*model.Reservation, error)
 
+	// GetByRoomID retrieves reservations by room ID with filters
+	GetByRoomID(ctx context.Context, restaurantID, roomID primitive.ObjectID, filters model.ReservationFilters, limit, offset int) ([]*model.Reservation, error)
+
 	// GetByDateRange retrieves reservations within a date range
 	GetByDateRange(ctx context.Context, restaurantID primitive.ObjectID, startDate, endDate string) ([]*model.Reservation, error)
 

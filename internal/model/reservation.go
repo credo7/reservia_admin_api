@@ -2,10 +2,37 @@
 package model
 
 import (
+	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+// LocalTime is a custom time type that handles timestamps without timezone info
+type LocalTime struct {
+	time.Time
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for timestamps without timezone
+func (lt *LocalTime) UnmarshalJSON(data []byte) error {
+	s := strings.Trim(string(data), "\"")
+	
+	// Parse timestamp without timezone, assume UTC
+	t, err := time.Parse("2006-01-02T15:04:05", s)
+	if err != nil {
+		return fmt.Errorf("cannot parse time %q: %w", s, err)
+	}
+	
+	lt.Time = t.UTC()
+	return nil
+}
+
+// MarshalJSON implements custom JSON marshaling
+func (lt LocalTime) MarshalJSON() ([]byte, error) {
+	return json.Marshal(lt.Time.Format("2006-01-02T15:04:05"))
+}
 
 // Status represents the status of a reservation.
 type Status string
@@ -34,103 +61,102 @@ const (
 type Reservation struct {
 	ID           primitive.ObjectID  `json:"id" bson:"_id,omitempty"`
 	Code         string              `json:"code" bson:"code"`
-	RestaurantID primitive.ObjectID  `json:"restaurantId" bson:"restaurantId"`
-	RoomID       primitive.ObjectID  `json:"room_id" bson:"room_id"`
-	TableID      primitive.ObjectID  `json:"table_id" bson:"table_id"`
-	UserID       *primitive.ObjectID `json:"user_id,omitempty" bson:"user_id,omitempty"`
+	RestaurantID primitive.ObjectID  `json:"restaurantId" bson:"restaurant_id"`
+	RoomID       primitive.ObjectID  `json:"roomId" bson:"room_id"`
+	TableID      primitive.ObjectID  `json:"tableId" bson:"table_id"`
+	UserID       *primitive.ObjectID `json:"userId,omitempty" bson:"user_id,omitempty"`
 
 	// Guest information
-	FullName   string `json:"full_name" bson:"full_name"`
+	FullName   string `json:"fullName" bson:"full_name"`
 	Email      string `json:"email" bson:"email"`
 	Phone      string `json:"phone" bson:"phone"`
-	GuestCount int    `json:"guest_count" bson:"guest_count"`
-	UserNotes  string `json:"user_notes" bson:"user_notes"`
+	GuestCount int    `json:"guestCount" bson:"guest_count"`
+	UserNotes  string `json:"userNotes" bson:"user_notes"`
 
 	// Status and authorization
 	Status          Status          `json:"status" bson:"status"`
-	AuthorizeMethod AuthorizeMethod `json:"authorize_method" bson:"authorize_method"`
-	IsUsedForAuth   bool            `json:"is_used_for_auth" bson:"is_used_for_auth"`
+	AuthorizeMethod AuthorizeMethod `json:"authorizeMethod" bson:"authorize_method"`
+	IsUsedForAuth   bool            `json:"isUsedForAuth" bson:"is_used_for_auth"`
 
 	// Time information
-	StartAt        time.Time `json:"start_at" bson:"start_at"`
-	EndAt          time.Time `json:"end_at" bson:"end_at"`
-	InitialEndAt   time.Time `json:"initial_end_at" bson:"initial_end_at"`
-	WorkingDayDate time.Time `json:"working_day_date" bson:"working_day_date"`
+	StartAt        time.Time `json:"startAt" bson:"start_at"`
+	EndAt          time.Time `json:"endAt" bson:"end_at"`
+	InitialEndAt   time.Time `json:"initialEndAt" bson:"initial_end_at"`
+	WorkingDayDate time.Time `json:"workingDayDate" bson:"working_day_date"`
 
 	// Timestamps
-	CreatedAt    time.Time  `json:"created_at" bson:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at" bson:"updated_at"`
-	AuthorizedAt *time.Time `json:"authorized_at,omitempty" bson:"authorized_at,omitempty"`
-	ConfirmedAt  *time.Time `json:"confirmed_at,omitempty" bson:"confirmed_at,omitempty"`
-	ArrivedAt    *time.Time `json:"arrived_at,omitempty" bson:"arrived_at,omitempty"`
-	CompletedAt  *time.Time `json:"completed_at,omitempty" bson:"completed_at,omitempty"`
-	NoShowAt     *time.Time `json:"no_show_at,omitempty" bson:"no_show_at,omitempty"`
-	CanceledAt   *time.Time `json:"canceled_at,omitempty" bson:"canceled_at,omitempty"`
+	CreatedAt    time.Time  `json:"createdAt" bson:"created_at"`
+	UpdatedAt    time.Time  `json:"updatedAt" bson:"updated_at"`
+	AuthorizedAt *time.Time `json:"authorizedAt,omitempty" bson:"authorized_at,omitempty"`
+	ConfirmedAt  *time.Time `json:"confirmedAt,omitempty" bson:"confirmed_at,omitempty"`
+	ArrivedAt    *time.Time `json:"arrivedAt,omitempty" bson:"arrived_at,omitempty"`
+	CompletedAt  *time.Time `json:"completedAt,omitempty" bson:"completed_at,omitempty"`
+	NoShowAt     *time.Time `json:"noShowAt,omitempty" bson:"no_show_at,omitempty"`
+	CanceledAt   *time.Time `json:"canceledAt,omitempty" bson:"canceled_at,omitempty"`
 
 	// Cancellation information
-	CanceledByEmployeeID   *primitive.ObjectID `json:"canceled_by_employee_id,omitempty" bson:"canceled_by_employee_id,omitempty"`
-	CancellationReason string              `json:"cancellation_reason" bson:"cancellation_reason"`
+	CanceledByEmployeeID *primitive.ObjectID `json:"canceledByEmployeeId,omitempty" bson:"canceled_by_employee_id,omitempty"`
+	CancellationReason   string              `json:"cancellationReason" bson:"cancellation_reason"`
 
 	// Administrative fields
-	AdminNotes string `json:"admin_notes" bson:"admin_notes"`
-	IsSeen     bool   `json:"is_seen" bson:"is_seen"`
+	AdminNotes string `json:"adminNotes" bson:"admin_notes"`
+	IsSeen     bool   `json:"isSeen" bson:"is_seen"`
 
 	// External integrations
-	TgUsername        string `json:"tg_username" bson:"tg_username"`
-	ExternalBookingID string `json:"external_booking_id" bson:"external_booking_id"`
+	TgUsername        string `json:"tgUsername" bson:"tg_username"`
+	ExternalBookingID string `json:"externalBookingId" bson:"external_booking_id"`
 }
 
 // CreateReservationRequest represents the request to create a reservation.
 type CreateReservationRequest struct {
-	TableID    primitive.ObjectID `json:"table_id" validate:"required"`
-	FullName   string             `json:"full_name" validate:"required,min=2,max=100"`
-	Email      string             `json:"email" validate:"required,email"`
-	Phone      string             `json:"phone" validate:"required"`
-	GuestCount int                `json:"guest_count" validate:"required,min=1,max=20"`
-	StartAt    time.Time          `json:"start_at" validate:"required"`
+	TableID    primitive.ObjectID `json:"tableId" validate:"required"`
+	Phone      string             `json:"phone,omitempty"`
+	FullName   string             `json:"fullName" validate:"required,min=2,max=100"`
+	GuestCount int                `json:"guestCount,omitempty" validate:"omitempty,min=1,max=20"`
+	StartAt    LocalTime          `json:"startAt" validate:"required"`
 	Duration   string             `json:"duration" validate:"required"` // Format: "2:30" (2 hours 30 minutes)
-	UserNotes  string             `json:"user_notes" validate:"max=500"`
+	UserNotes  string             `json:"userNotes,omitempty" validate:"max=500"`
 }
 
 // UpdateReservationRequest represents the request to update a reservation.
 type UpdateReservationRequest struct {
-	StartAt            *time.Time          `json:"start_at,omitempty"`
-	EndAt              *time.Time          `json:"end_at,omitempty"`
+	StartAt            *time.Time          `json:"startAt,omitempty"`
+	EndAt              *time.Time          `json:"endAt,omitempty"`
 	Duration           *string             `json:"duration,omitempty"`
-	TableID            *primitive.ObjectID `json:"table_id,omitempty"`
-	GuestCount         *int                `json:"guest_count,omitempty" validate:"omitempty,min=1,max=20"`
-	AdminNotes         *string             `json:"admin_notes,omitempty"`
-	CancellationReason *string             `json:"cancellation_reason,omitempty"`
+	TableID            *primitive.ObjectID `json:"tableId,omitempty"`
+	GuestCount         *int                `json:"guestCount,omitempty" validate:"omitempty,min=1,max=20"`
+	AdminNotes         *string             `json:"adminNotes,omitempty"`
+	CancellationReason *string             `json:"cancellationReason,omitempty"`
 }
 
 // UpdateReservationStatusRequest represents the request to update reservation status.
 type UpdateReservationStatusRequest struct {
 	Status             Status `json:"status" validate:"required"`
-	AdminNotes         string `json:"admin_notes"`
-	CancellationReason string `json:"cancellation_reason"`
+	AdminNotes         string `json:"adminNotes"`
+	CancellationReason string `json:"cancellationReason"`
 }
 
 // MarkReservationsAsSeenRequest represents the request to mark reservations as seen.
 type MarkReservationsAsSeenRequest struct {
-	ReservationIDs []string `json:"reservation_ids,omitempty"`
-	MarkAllUnseen  bool     `json:"mark_all_unseen,omitempty"`
+	ReservationIDs []string `json:"reservationIds,omitempty"`
+	MarkAllUnseen  bool     `json:"markAllUnseen,omitempty"`
 }
 
 // ReservationCountsResponse represents reservation counts.
 type ReservationCountsResponse struct {
-	UnseenCount  int `json:"unseen_count"`
-	PendingCount int `json:"pending_count"`
+	UnseenCount  int `json:"unseenCount"`
+	PendingCount int `json:"pendingCount"`
 }
 
 // ReservationFilters represents filters for querying reservations.
 type ReservationFilters struct {
 	RestaurantID primitive.ObjectID `json:"restaurantId"`
-	RoomID       primitive.ObjectID `json:"room_id,omitempty"`
-	TableID      primitive.ObjectID `json:"table_id,omitempty"`
-	StartAt      *time.Time         `json:"start_at,omitempty"`
-	EndAt        *time.Time         `json:"end_at,omitempty"`
+	RoomID       primitive.ObjectID `json:"roomId,omitempty"`
+	TableID      primitive.ObjectID `json:"tableId,omitempty"`
+	StartAt      *time.Time         `json:"startAt,omitempty"`
+	EndAt        *time.Time         `json:"endAt,omitempty"`
 	Status       string             `json:"status,omitempty"`
-	IsSeen       *bool              `json:"is_seen,omitempty"`
+	IsSeen       *bool              `json:"isSeen,omitempty"`
 	Limit        int                `json:"limit,omitempty"`
 	Skip         int                `json:"skip,omitempty"`
 }
@@ -215,22 +241,22 @@ type ReservationResponse struct {
 	ID           primitive.ObjectID  `json:"id"`
 	Code         string              `json:"code"`
 	RestaurantID primitive.ObjectID  `json:"restaurantId"`
-	RoomID       primitive.ObjectID  `json:"room_id"`
-	TableID      primitive.ObjectID  `json:"table_id"`
-	UserID       *primitive.ObjectID `json:"user_id,omitempty"`
-	FullName     string              `json:"full_name"`
+	RoomID       primitive.ObjectID  `json:"roomId"`
+	TableID      primitive.ObjectID  `json:"tableId"`
+	UserID       *primitive.ObjectID `json:"userId,omitempty"`
+	FullName     string              `json:"fullName"`
 	Email        string              `json:"email"`
 	Phone        string              `json:"phone"`
-	GuestCount   int                 `json:"guest_count"`
-	UserNotes    string              `json:"user_notes"`
+	GuestCount   int                 `json:"guestCount"`
+	UserNotes    string              `json:"userNotes"`
 	Status       Status              `json:"status"`
-	StartAt      time.Time           `json:"start_at"`
-	EndAt        time.Time           `json:"end_at"`
-	Duration     int                 `json:"duration_minutes"`
-	TimeSlot     string              `json:"time_slot"`
-	IsActive     bool                `json:"is_active"`
-	CreatedAt    time.Time           `json:"created_at"`
-	UpdatedAt    time.Time           `json:"updated_at"`
+	StartAt      time.Time           `json:"startAt"`
+	EndAt        time.Time           `json:"endAt"`
+	Duration     int                 `json:"durationMinutes"`
+	TimeSlot     string              `json:"timeSlot"`
+	IsActive     bool                `json:"isActive"`
+	CreatedAt    time.Time           `json:"createdAt"`
+	UpdatedAt    time.Time           `json:"updatedAt"`
 }
 
 // ToResponse converts a Reservation to ReservationResponse.

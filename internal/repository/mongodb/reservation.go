@@ -92,6 +92,69 @@ func (r *ReservationRepository) GetByRestaurantID(ctx context.Context, restauran
 	return reservations, cursor.Err()
 }
 
+// GetByRoomID retrieves reservations by room ID with filters.
+func (r *ReservationRepository) GetByRoomID(ctx context.Context, restaurantID, roomID primitive.ObjectID, filters model.ReservationFilters, limit, offset int) ([]*model.Reservation, error) {
+	// Build base filter
+	filter := bson.M{
+		"restaurant_id": restaurantID,
+		"room_id":       roomID,
+	}
+
+	// Apply optional filters
+	if !filters.TableID.IsZero() {
+		filter["table_id"] = filters.TableID
+	}
+
+	if filters.Status != "" {
+		filter["status"] = filters.Status
+	}
+
+	if filters.IsSeen != nil {
+		filter["is_seen"] = *filters.IsSeen
+	}
+
+	if filters.StartAt != nil {
+		if filter["start_at"] == nil {
+			filter["start_at"] = bson.M{}
+		}
+		filter["start_at"].(bson.M)["$gte"] = *filters.StartAt
+	}
+
+	if filters.EndAt != nil {
+		if filter["start_at"] == nil {
+			filter["start_at"] = bson.M{}
+		}
+		filter["start_at"].(bson.M)["$lt"] = *filters.EndAt
+	}
+
+	// Set up options
+	opts := options.Find()
+	if limit > 0 {
+		opts.SetLimit(int64(limit))
+	}
+	if offset > 0 {
+		opts.SetSkip(int64(offset))
+	}
+	opts.SetSort(bson.D{primitive.E{Key: "start_at", Value: 1}})
+
+	cursor, err := r.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var reservations []*model.Reservation
+	for cursor.Next(ctx) {
+		var res model.Reservation
+		if err := cursor.Decode(&res); err != nil {
+			return nil, err
+		}
+		reservations = append(reservations, &res)
+	}
+
+	return reservations, cursor.Err()
+}
+
 // GetByDateRange retrieves reservations within a date range.
 func (r *ReservationRepository) GetByDateRange(ctx context.Context, restaurantID primitive.ObjectID, startDate, endDate string) ([]*model.Reservation, error) {
 	// Parse dates
@@ -186,9 +249,9 @@ func (r *ReservationRepository) CheckAvailability(ctx context.Context, restauran
 func (r *ReservationRepository) GetActiveReservationsInTimeRange(ctx context.Context, filters model.TableAvailabilityFilters) ([]*model.Reservation, error) {
 	// Build query filter
 	filter := bson.M{
-		"restaurantId": filters.RestaurantID,
-		"start_at":     bson.M{"$lt": filters.EndAt},
-		"end_at":       bson.M{"$gt": filters.StartAt},
+		"restaurant_id": filters.RestaurantID,
+		"start_at":      bson.M{"$lt": filters.EndAt},
+		"end_at":        bson.M{"$gt": filters.StartAt},
 		"status": bson.M{
 			"$in": model.GetActiveReservationStatuses(),
 		},
@@ -227,10 +290,10 @@ func (r *ReservationRepository) GetActiveReservationsInTimeRange(ctx context.Con
 // GetActiveReservationsForTable retrieves active reservations for a specific table in a time range.
 func (r *ReservationRepository) GetActiveReservationsForTable(ctx context.Context, restaurantID, tableID primitive.ObjectID, startAt, endAt time.Time) ([]*model.Reservation, error) {
 	filter := bson.M{
-		"restaurantId": restaurantID,
-		"table_id":     tableID,
-		"start_at":     bson.M{"$lt": endAt},
-		"end_at":       bson.M{"$gt": startAt},
+		"restaurant_id": restaurantID,
+		"table_id":      tableID,
+		"start_at":      bson.M{"$lt": endAt},
+		"end_at":        bson.M{"$gt": startAt},
 		"status": bson.M{
 			"$in": model.GetActiveReservationStatuses(),
 		},
@@ -260,10 +323,10 @@ func (r *ReservationRepository) GetActiveReservationsForTable(ctx context.Contex
 // GetActiveReservationsForRoom retrieves active reservations for all tables in a room within a time range.
 func (r *ReservationRepository) GetActiveReservationsForRoom(ctx context.Context, restaurantID, roomID primitive.ObjectID, startAt, endAt time.Time) ([]*model.Reservation, error) {
 	filter := bson.M{
-		"restaurantId": restaurantID,
-		"room_id":      roomID,
-		"start_at":     bson.M{"$lt": endAt},
-		"end_at":       bson.M{"$gt": startAt},
+		"restaurant_id": restaurantID,
+		"room_id":       roomID,
+		"start_at":      bson.M{"$lt": endAt},
+		"end_at":        bson.M{"$gt": startAt},
 		"status": bson.M{
 			"$in": model.GetActiveReservationStatuses(),
 		},
@@ -294,10 +357,10 @@ func (r *ReservationRepository) GetActiveReservationsForRoom(ctx context.Context
 // (matches Python multi-table query optimization).
 func (r *ReservationRepository) GetActiveReservationsForMultipleTables(ctx context.Context, restaurantID primitive.ObjectID, tableIDs []primitive.ObjectID, startAt, endAt time.Time) ([]*model.Reservation, error) {
 	filter := bson.M{
-		"restaurantId": restaurantID,
-		"table_id":     bson.M{"$in": tableIDs},
-		"start_at":     bson.M{"$lt": endAt},
-		"end_at":       bson.M{"$gt": startAt},
+		"restaurant_id": restaurantID,
+		"table_id":      bson.M{"$in": tableIDs},
+		"start_at":      bson.M{"$lt": endAt},
+		"end_at":        bson.M{"$gt": startAt},
 		"status": bson.M{
 			"$in": model.GetActiveReservationStatuses(),
 		},
