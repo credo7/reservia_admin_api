@@ -16,19 +16,21 @@ import (
 
 // AuthRepository implements the auth repository interface using MongoDB.
 type AuthRepository struct {
-	registerVerificationCodes *mongo.Collection
-	loginVerificationCodes    *mongo.Collection
-	registerEmployeeCodes     *mongo.Collection
-	tgVerificationCodes       *mongo.Collection
+	registerVerificationCodes  *mongo.Collection
+	loginVerificationCodes     *mongo.Collection
+	registerEmployeeCodes      *mongo.Collection
+	tgVerificationCodes        *mongo.Collection
+	emailUpdateVerificationCodes *mongo.Collection
 }
 
 // NewAuthRepository creates a new auth repository.
 func NewAuthRepository(db *mongo.Database) repository.AuthRepository {
 	return &AuthRepository{
-		loginVerificationCodes:    db.Collection("employees_login_verification_codes"),
-		registerVerificationCodes: db.Collection("employees_register_verification_codes"),
-		registerEmployeeCodes:     db.Collection("employees_register_employee_codes"),
-		tgVerificationCodes:       db.Collection("employees_tg_verification_codes"),
+		loginVerificationCodes:       db.Collection("employees_login_verification_codes"),
+		registerVerificationCodes:    db.Collection("employees_register_verification_codes"),
+		registerEmployeeCodes:        db.Collection("employees_register_employee_codes"),
+		tgVerificationCodes:          db.Collection("employees_tg_verification_codes"),
+		emailUpdateVerificationCodes: db.Collection("employees_email_update_verification_codes"),
 	}
 }
 
@@ -286,5 +288,43 @@ func (r *AuthRepository) UpdateTelegramVerificationCode(ctx context.Context, cod
 		},
 	}
 	_, err := r.tgVerificationCodes.UpdateOne(ctx, filter, update)
+	return err
+}
+
+// Email update verification code methods
+
+// CreateEmailUpdateVerificationCode creates an email update verification code.
+func (r *AuthRepository) CreateEmailUpdateVerificationCode(ctx context.Context, code *model.EmailUpdateVerificationCode) error {
+	code.ID = primitive.NewObjectID()
+	code.CreatedAt = time.Now()
+	code.UpdatedAt = time.Now()
+
+	_, err := r.emailUpdateVerificationCodes.InsertOne(ctx, code)
+	return err
+}
+
+// GetEmailUpdateVerificationCodeByID retrieves an email update verification code by ID.
+func (r *AuthRepository) GetEmailUpdateVerificationCodeByID(ctx context.Context, id primitive.ObjectID) (*model.EmailUpdateVerificationCode, error) {
+	var euvc model.EmailUpdateVerificationCode
+	err := r.emailUpdateVerificationCodes.FindOne(ctx, bson.M{"_id": id}).Decode(&euvc)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("email update verification code not found")
+		}
+		return nil, err
+	}
+	return &euvc, nil
+}
+
+// UpdateEmailUpdateVerificationCode updates an email update verification code.
+func (r *AuthRepository) UpdateEmailUpdateVerificationCode(ctx context.Context, code *model.EmailUpdateVerificationCode) error {
+	filter := bson.M{"_id": code.ID}
+	update := bson.M{
+		"$set": bson.M{
+			"is_used":    code.IsUsed,
+			"updated_at": code.UpdatedAt,
+		},
+	}
+	_, err := r.emailUpdateVerificationCodes.UpdateOne(ctx, filter, update)
 	return err
 }

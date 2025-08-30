@@ -688,13 +688,21 @@ func (h *EmployeeHandler) UpdateEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Implement email update logic in auth service
-	// For now, return a mock response
-	response := &model.EmailUpdateResponse{
-		CodeRequestID: "mock_email_update_request_id",
+	// Use auth service to handle email update
+	response, err := h.authService.UpdateEmail(r.Context(), employee.ID, &req)
+	if err != nil {
+		h.logger.Error("Failed to initiate email update", "employee_id", employee.ID, "new_email", req.NewEmail, "error", err)
+		if err.Error() == "new email must be different from current email" {
+			h.writeError(w, http.StatusBadRequest, "New email must be different from current email")
+		} else if err.Error() == "email is already taken" {
+			h.writeError(w, http.StatusConflict, "Email is already taken")
+		} else {
+			h.writeError(w, http.StatusInternalServerError, "Failed to initiate email update")
+		}
+		return
 	}
 
-	h.logger.Info("Email update requested", "employee_id", employee.ID, "new_email", req.NewEmail)
+	h.logger.Info("Email update initiated successfully", "employee_id", employee.ID, "new_email", req.NewEmail, "code_request_id", response.CodeRequestID)
 	h.writeJSON(w, http.StatusOK, response)
 }
 
@@ -727,10 +735,22 @@ func (h *EmployeeHandler) VerifyEmailUpdate(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// TODO: Implement email verification logic in auth service
-	// For now, return current employee data
-	h.logger.Info("Email verification completed", "employee_id", employee.ID, "code_request_id", req.CodeRequestID)
-	h.writeJSON(w, http.StatusOK, employee)
+	// Use auth service to verify and update email
+	updatedEmployee, err := h.authService.VerifyEmailUpdate(r.Context(), employee.ID, &req)
+	if err != nil {
+		h.logger.Error("Failed to verify email update", "employee_id", employee.ID, "code_request_id", req.CodeRequestID, "error", err)
+		if err.Error() == "invalid verification code" || err.Error() == "verification code is invalid or expired" {
+			h.writeError(w, http.StatusBadRequest, "Invalid or expired verification code")
+		} else if err.Error() == "email is no longer available" {
+			h.writeError(w, http.StatusConflict, "Email is no longer available")
+		} else {
+			h.writeError(w, http.StatusInternalServerError, "Failed to verify email update")
+		}
+		return
+	}
+
+	h.logger.Info("Email verification completed successfully", "employee_id", employee.ID, "new_email", updatedEmployee.Email, "code_request_id", req.CodeRequestID)
+	h.writeJSON(w, http.StatusOK, updatedEmployee)
 }
 
 // ConnectTelegram handles POST /employees/me/telegram/connect.

@@ -146,6 +146,11 @@ type AuthRepository interface {
 	CreateTelegramVerificationCode(ctx context.Context, code *model.TelegramVerificationCode) error
 	GetTelegramVerificationCode(ctx context.Context, requestID string) (*model.TelegramVerificationCode, error)
 	UpdateTelegramVerificationCode(ctx context.Context, code *model.TelegramVerificationCode) error
+
+	// Email update verification codes
+	CreateEmailUpdateVerificationCode(ctx context.Context, code *model.EmailUpdateVerificationCode) error
+	GetEmailUpdateVerificationCodeByID(ctx context.Context, id primitive.ObjectID) (*model.EmailUpdateVerificationCode, error)
+	UpdateEmailUpdateVerificationCode(ctx context.Context, code *model.EmailUpdateVerificationCode) error
 }
 
 // Repositories aggregates all repository interfaces.

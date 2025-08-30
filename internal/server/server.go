@@ -239,7 +239,7 @@ func (s *Server) setupEmployeeProfileRoutes(r chi.Router) {
 	r.Route("/me", func(r chi.Router) {
 		r.Get("/", s.employeeHandler.GetMe) // GET /employees/me
 		r.Patch("/", s.employeeHandler.UpdateMe)
-		r.Post("/email/update", s.employeeHandler.UpdateEmail)
+		r.Patch("/email", s.employeeHandler.UpdateEmail)
 		r.Post("/email/verify", s.employeeHandler.VerifyEmailUpdate)
 		r.Post("/telegram/connect", s.employeeHandler.ConnectTelegram)
 		r.Get("/telegram/connect/{requestId}", s.employeeHandler.CheckTelegramConnection)

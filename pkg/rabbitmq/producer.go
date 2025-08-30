@@ -121,7 +121,7 @@ func (p *Producer) SendEmployeeRegisterEmail(queueName, email, fullName, codeReq
 	return p.SendEmailTask(queueName, task)
 }
 
-// SendEmployeeRegisterEmail sends an employee registration email task.
+// SendEmployeeInvitationEmail sends an employee invitation email task.
 func (p *Producer) SendEmployeeInvitationEmail(
 	queueName, email, fullName, code, codeRequestID, restaurantName, city, address string,
 ) error {
@@ -135,6 +135,18 @@ func (p *Producer) SendEmployeeInvitationEmail(
 			"restaurant_name": restaurantName,
 			"city":            city,
 			"address":         address,
+		},
+	}
+	return p.SendEmailTask(queueName, task)
+}
+
+// SendEmailUpdateVerification sends an email update verification task.
+func (p *Producer) SendEmailUpdateVerification(queueName, email, code string) error {
+	task := EmailTask{
+		Type: "email_update_verification",
+		Data: map[string]interface{}{
+			"email": email,
+			"code":  code,
 		},
 	}
 	return p.SendEmailTask(queueName, task)

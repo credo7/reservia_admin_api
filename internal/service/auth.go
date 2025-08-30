@@ -949,3 +949,138 @@ func (as *AuthService) UpdateInvitation(ctx context.Context, invitationID string
 	as.logger.Info("Successfully updated invitation", "invitation_id", invitationID, "email", existingInvitation.Email)
 	return existingInvitation, nil
 }
+
+// UpdateEmail initiates the email update process by generating a verification code and sending it to the new email.
+func (as *AuthService) UpdateEmail(ctx context.Context, employeeID primitive.ObjectID, req *model.EmailUpdateRequest) (*model.EmailUpdateResponse, error) {
+	as.logger.Info("Initiating email update", "employee_id", employeeID, "new_email", req.NewEmail)
+
+	// Get current employee
+	employee, err := as.employeeRepo.GetByID(ctx, employeeID)
+	if err != nil {
+		as.logger.Error("Failed to get employee for email update", "employee_id", employeeID, "error", err)
+		return nil, fmt.Errorf("employee not found")
+	}
+
+	// Check if new email is different from current email
+	if employee.Email == req.NewEmail {
+		as.logger.Warn("New email is the same as current email", "employee_id", employeeID, "email", req.NewEmail)
+		return nil, fmt.Errorf("new email must be different from current email")
+	}
+
+	// Check if new email is already taken by another employee
+	existingEmployee, err := as.employeeRepo.GetByEmail(ctx, req.NewEmail)
+	if err == nil && existingEmployee != nil && existingEmployee.ID != employeeID {
+		as.logger.Warn("Email is already taken by another employee", "employee_id", employeeID, "new_email", req.NewEmail, "existing_employee_id", existingEmployee.ID)
+		return nil, fmt.Errorf("email is already taken")
+	}
+
+	// Generate verification code
+	verificationCode, err := as.generateVerificationCode()
+	if err != nil {
+		as.logger.Error("Failed to generate verification code for email update", "employee_id", employeeID, "error", err)
+		return nil, fmt.Errorf("failed to generate verification code")
+	}
+
+	// Create email update verification code
+	emailUpdateCode := &model.EmailUpdateVerificationCode{
+		ID:         primitive.NewObjectID(),
+		EmployeeID: employeeID,
+		OldEmail:   employee.Email,
+		NewEmail:   req.NewEmail,
+		Code:       verificationCode,
+		IsUsed:     false,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+
+	// Save verification code
+	if err := as.authRepo.CreateEmailUpdateVerificationCode(ctx, emailUpdateCode); err != nil {
+		as.logger.Error("Failed to save email update verification code", "employee_id", employeeID, "error", err)
+		return nil, fmt.Errorf("failed to save verification code")
+	}
+
+	// Send verification email to the new email address via RabbitMQ
+	if as.emailProducer != nil {
+		if err := as.emailProducer.SendEmailUpdateVerification(as.queueName, req.NewEmail, verificationCode); err != nil {
+			as.logger.Error("Failed to send email update verification", "new_email", req.NewEmail, "error", err)
+			// Note: We don't return error here as the verification code is saved and user can still verify manually
+		} else {
+			as.logger.Info("Email update verification task sent", "new_email", req.NewEmail)
+		}
+	}
+
+	as.logger.Info("Email update verification code generated", "employee_id", employeeID, "code_request_id", emailUpdateCode.ID.Hex())
+
+	return &model.EmailUpdateResponse{
+		CodeRequestID: emailUpdateCode.ID.Hex(),
+	}, nil
+}
+
+// VerifyEmailUpdate verifies the email update with a verification code and updates the employee's email.
+func (as *AuthService) VerifyEmailUpdate(ctx context.Context, employeeID primitive.ObjectID, req *model.EmailVerifyRequest) (*model.Employee, error) {
+	as.logger.Info("Verifying email update", "employee_id", employeeID, "code_request_id", req.CodeRequestID)
+
+	// Convert CodeRequestID to ObjectID
+	codeRequestID, err := primitive.ObjectIDFromHex(req.CodeRequestID)
+	if err != nil {
+		as.logger.Error("Invalid code request ID format for email update", "code_request_id", req.CodeRequestID, "error", err)
+		return nil, fmt.Errorf("invalid code request ID")
+	}
+
+	// Get email update verification code
+	emailUpdateCode, err := as.authRepo.GetEmailUpdateVerificationCodeByID(ctx, codeRequestID)
+	if err != nil {
+		as.logger.Error("Email update verification code not found", "code_request_id", req.CodeRequestID, "error", err)
+		return nil, fmt.Errorf("invalid verification code")
+	}
+
+	// Verify that the code belongs to the requesting employee
+	if emailUpdateCode.EmployeeID != employeeID {
+		as.logger.Warn("Email update verification code does not belong to employee", "employee_id", employeeID, "code_employee_id", emailUpdateCode.EmployeeID)
+		return nil, fmt.Errorf("invalid verification code")
+	}
+
+	// Verify the provided code matches
+	if emailUpdateCode.Code != req.Code {
+		as.logger.Error("Email update verification code mismatch", "code_request_id", req.CodeRequestID)
+		return nil, fmt.Errorf("invalid verification code")
+	}
+
+	// Check if code is valid (not expired and not used)
+	if !emailUpdateCode.IsValid() {
+		as.logger.Error("Email update verification code is invalid or expired", "code_request_id", req.CodeRequestID)
+		return nil, fmt.Errorf("verification code is invalid or expired")
+	}
+
+	// Check if new email is still available (double-check in case it was taken while verification was pending)
+	existingEmployee, err := as.employeeRepo.GetByEmail(ctx, emailUpdateCode.NewEmail)
+	if err == nil && existingEmployee != nil && existingEmployee.ID != employeeID {
+		as.logger.Warn("Email became unavailable during verification", "employee_id", employeeID, "new_email", emailUpdateCode.NewEmail, "existing_employee_id", existingEmployee.ID)
+		return nil, fmt.Errorf("email is no longer available")
+	}
+
+	// Mark verification code as used
+	emailUpdateCode.MarkAsUsed()
+	if err := as.authRepo.UpdateEmailUpdateVerificationCode(ctx, emailUpdateCode); err != nil {
+		as.logger.Error("Failed to mark email update verification code as used", "code_request_id", req.CodeRequestID, "error", err)
+		return nil, fmt.Errorf("failed to process verification code")
+	}
+
+	// Get employee and update email
+	employee, err := as.employeeRepo.GetByID(ctx, employeeID)
+	if err != nil {
+		as.logger.Error("Failed to get employee for email update completion", "employee_id", employeeID, "error", err)
+		return nil, fmt.Errorf("employee not found")
+	}
+
+	// Update employee's email
+	employee.Email = emailUpdateCode.NewEmail
+	employee.UpdatedAt = time.Now()
+	if err := as.employeeRepo.Update(ctx, employee); err != nil {
+		as.logger.Error("Failed to update employee email", "employee_id", employeeID, "new_email", emailUpdateCode.NewEmail, "error", err)
+		return nil, fmt.Errorf("failed to update email")
+	}
+
+	as.logger.Info("Email update successful", "employee_id", employeeID, "old_email", emailUpdateCode.OldEmail, "new_email", emailUpdateCode.NewEmail)
+	return employee, nil
+}

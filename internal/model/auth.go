@@ -133,6 +133,18 @@ type EmailVerifyRequest struct {
 	Code          string `json:"code" validate:"required,len=6"`
 }
 
+// EmailUpdateVerificationCode represents a verification code for email update.
+type EmailUpdateVerificationCode struct {
+	ID         primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	EmployeeID primitive.ObjectID `json:"employeeId" bson:"employee_id"`
+	OldEmail   string             `json:"oldEmail" bson:"old_email"`
+	NewEmail   string             `json:"newEmail" bson:"new_email"`
+	Code       string             `json:"code" bson:"code"`
+	IsUsed     bool               `json:"isUsed" bson:"is_used"`
+	CreatedAt  time.Time          `json:"createdAt" bson:"created_at"`
+	UpdatedAt  time.Time          `json:"updatedAt" bson:"updated_at"`
+}
+
 // TelegramConnectResponse represents response for Telegram connection initiation (matches Python TelegramConnectionResponseSchema).
 type TelegramConnectResponse struct {
 	ConnectionRequestID string `json:"connectionRequestId"`
@@ -206,6 +218,22 @@ func (tvc *TelegramVerificationCode) IsExpired() bool {
 // IsCompleted checks if the Telegram verification code has been completed (employee_id is set).
 func (tvc *TelegramVerificationCode) IsCompleted() bool {
 	return tvc.EmployeeID != nil
+}
+
+// IsExpired checks if the email update verification code has expired.
+func (euvc *EmailUpdateVerificationCode) IsExpired() bool {
+	return time.Now().After(euvc.CreatedAt.Add(AuthRequestExpiration))
+}
+
+// IsValid checks if the email update verification code is valid (not expired and not used).
+func (euvc *EmailUpdateVerificationCode) IsValid() bool {
+	return !euvc.IsExpired() && !euvc.IsUsed
+}
+
+// MarkAsUsed marks the email update verification code as used.
+func (euvc *EmailUpdateVerificationCode) MarkAsUsed() {
+	euvc.IsUsed = true
+	euvc.UpdatedAt = time.Now()
 }
 
 // IsExpired checks if the action request has expired.
