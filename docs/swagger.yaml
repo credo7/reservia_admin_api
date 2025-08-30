@@ -1912,11 +1912,10 @@ paths:
       summary: Get reservation by ID
       tags:
       - reservations
-  /reservations/{reservationId}/by_admin:
     patch:
       consumes:
       - application/json
-      description: Update a reservation by an admin employee
+      description: Update a reservation
       parameters:
       - description: Reservation ID
         in: path
@@ -1962,7 +1961,7 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: Update reservation by admin
+      summary: Update reservation
       tags:
       - reservations
   /reservations/{reservationId}/cancel:
@@ -3150,11 +3149,10 @@ paths:
       summary: Get reservations for a room
       tags:
       - reservations
-  /restaurants/{restaurantId}/rooms/{roomId}/reservations/by_employee:
     post:
       consumes:
       - application/json
-      description: Create a new reservation by an admin employee
+      description: Create a new reservation
       parameters:
       - description: Restaurant ID
         in: path
@@ -3205,7 +3203,7 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: Create a reservation by employee
+      summary: Create a reservation
       tags:
       - reservations
   /restaurants/{restaurantId}/settings:

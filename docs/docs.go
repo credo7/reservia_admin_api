@@ -1592,16 +1592,14 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/reservations/{reservationId}/by_admin": {
+            },
             "patch": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update a reservation by an admin employee",
+                "description": "Update a reservation",
                 "consumes": [
                     "application/json"
                 ],
@@ -1611,7 +1609,7 @@ const docTemplate = `{
                 "tags": [
                     "reservations"
                 ],
-                "summary": "Update reservation by admin",
+                "summary": "Update reservation",
                 "parameters": [
                     {
                         "type": "string",
@@ -3554,16 +3552,14 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/restaurants/{restaurantId}/rooms/{roomId}/reservations/by_employee": {
+            },
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new reservation by an admin employee",
+                "description": "Create a new reservation",
                 "consumes": [
                     "application/json"
                 ],
@@ -3573,7 +3569,7 @@ const docTemplate = `{
                 "tags": [
                     "reservations"
                 ],
-                "summary": "Create a reservation by employee",
+                "summary": "Create a reservation",
                 "parameters": [
                     {
                         "type": "string",

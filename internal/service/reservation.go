@@ -31,8 +31,8 @@ func NewReservationService(reservationRepo repository.ReservationRepository, res
 	}
 }
 
-// CreateReservationByEmployee creates a new reservation by employee (admin).
-func (rs *ReservationService) CreateReservationByEmployee(ctx context.Context, restaurantID primitive.ObjectID, roomID primitive.ObjectID, req *model.CreateReservationRequest, employeeID primitive.ObjectID) (*model.Reservation, error) {
+// CreateReservation creates a new reservation.
+func (rs *ReservationService) CreateReservation(ctx context.Context, restaurantID primitive.ObjectID, roomID primitive.ObjectID, req *model.CreateReservationRequest, employeeID primitive.ObjectID) (*model.Reservation, error) {
 	// Validate restaurant and room exist
 	restaurant, err := rs.restaurantRepo.GetByID(ctx, restaurantID)
 	if err != nil {
@@ -348,8 +348,8 @@ func (rs *ReservationService) UpdateReservationStatus(ctx context.Context, id pr
 	return reservation, nil
 }
 
-// UpdateReservationByAdmin updates a reservation by admin.
-func (rs *ReservationService) UpdateReservationByAdmin(ctx context.Context, id primitive.ObjectID, req *model.UpdateReservationRequest, employeeID primitive.ObjectID) (*model.Reservation, error) {
+// UpdateReservation updates a reservation.
+func (rs *ReservationService) UpdateReservation(ctx context.Context, id primitive.ObjectID, req *model.UpdateReservationRequest, employeeID primitive.ObjectID) (*model.Reservation, error) {
 	reservation, err := rs.GetReservationByID(ctx, id)
 	if err != nil {
 		return nil, err

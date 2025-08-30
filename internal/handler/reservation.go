@@ -29,10 +29,10 @@ func NewReservationHandler(reservationService *service.ReservationService, authS
 	}
 }
 
-// CreateReservationByEmployee handles POST /restaurants/{restaurantId}/rooms/{roomId}/reservations/by_employee.
+// CreateReservation handles POST /restaurants/{restaurantId}/rooms/{roomId}/reservations.
 //
-//	@Summary		Create a reservation by employee
-//	@Description	Create a new reservation by an admin employee
+//	@Summary		Create a reservation
+//	@Description	Create a new reservation
 //	@Tags			reservations
 //	@Accept			json
 //	@Produce		json
@@ -44,9 +44,9 @@ func NewReservationHandler(reservationService *service.ReservationService, authS
 //	@Failure		404				{object}	map[string]string				"Restaurant or room not found"
 //	@Failure		409				{object}	map[string]string				"Reservation conflict"
 //	@Failure		500				{object}	map[string]string				"Internal server error"
-//	@Router			/restaurants/{restaurantId}/rooms/{roomId}/reservations/by_employee [post]
+//	@Router			/restaurants/{restaurantId}/rooms/{roomId}/reservations [post]
 //	@Security		BearerAuth
-func (h *ReservationHandler) CreateReservationByEmployee(w http.ResponseWriter, r *http.Request) {
+func (h *ReservationHandler) CreateReservation(w http.ResponseWriter, r *http.Request) {
 	// Authentication required - extract employee ID from token
 	employeeID, err := h.authenticateRequest(r)
 	if err != nil {
@@ -76,7 +76,7 @@ func (h *ReservationHandler) CreateReservationByEmployee(w http.ResponseWriter, 
 		return
 	}
 
-	reservation, err := h.reservationService.CreateReservationByEmployee(r.Context(), restaurantID, roomID, &req, employeeID)
+	reservation, err := h.reservationService.CreateReservation(r.Context(), restaurantID, roomID, &req, employeeID)
 	if err != nil {
 		h.logger.Error("Failed to create reservation", "restaurant_id", restaurantID, "room_id", roomIDStr, "error", err)
 		if strings.Contains(err.Error(), "not found") {
@@ -249,10 +249,10 @@ func (h *ReservationHandler) GetReservation(w http.ResponseWriter, r *http.Reque
 	h.writeJSON(w, http.StatusOK, reservation.ToResponse())
 }
 
-// UpdateReservationByAdmin handles PATCH /reservations/{reservationId}/by_admin.
+// UpdateReservation handles PATCH /reservations/{reservationId}.
 //
-//	@Summary		Update reservation by admin
-//	@Description	Update a reservation by an admin employee
+//	@Summary		Update reservation
+//	@Description	Update a reservation
 //	@Tags			reservations
 //	@Accept			json
 //	@Produce		json
@@ -263,16 +263,16 @@ func (h *ReservationHandler) GetReservation(w http.ResponseWriter, r *http.Reque
 //	@Failure		404				{object}	map[string]string				"Reservation not found"
 //	@Failure		409				{object}	map[string]string				"Reservation conflict"
 //	@Failure		500				{object}	map[string]string				"Internal server error"
-//	@Router			/reservations/{reservationId}/by_admin [patch]
+//	@Router			/reservations/{reservationId} [patch]
 //	@Security		BearerAuth
-func (h *ReservationHandler) UpdateReservationByAdmin(w http.ResponseWriter, r *http.Request) {
+func (h *ReservationHandler) UpdateReservation(w http.ResponseWriter, r *http.Request) {
 	// Authentication required - extract employee ID from token
 	employeeID, err := h.authenticateRequest(r)
 	if err != nil {
 		h.writeError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
-	h.logger.Info("Reservation update by admin requested", "employee_id", employeeID)
+	h.logger.Info("Reservation update requested", "employee_id", employeeID)
 
 	reservationIDStr := chi.URLParam(r, "reservationId")
 	reservationID, err := primitive.ObjectIDFromHex(reservationIDStr)
@@ -287,7 +287,7 @@ func (h *ReservationHandler) UpdateReservationByAdmin(w http.ResponseWriter, r *
 		return
 	}
 
-	reservation, err := h.reservationService.UpdateReservationByAdmin(r.Context(), reservationID, &req, employeeID)
+	reservation, err := h.reservationService.UpdateReservation(r.Context(), reservationID, &req, employeeID)
 	if err != nil {
 		h.logger.Error("Failed to update reservation", "reservation_id", reservationID, "error", err)
 		if strings.Contains(err.Error(), "not found") {

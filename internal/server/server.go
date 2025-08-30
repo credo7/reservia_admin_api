@@ -314,7 +314,7 @@ func (s *Server) setupRoomElementRoutes(r chi.Router) {
 
 // setupRoomReservationRoutes configures reservation endpoints for rooms.
 func (s *Server) setupRoomReservationRoutes(r chi.Router) {
-	r.Post("/{roomId}/reservations/by_employee", s.reservationHandler.CreateReservationByEmployee)
+	r.Post("/{roomId}/reservations", s.reservationHandler.CreateReservation)
 	r.Get("/{roomId}/reservations", s.reservationHandler.GetReservationsByRoom)
 }
 
@@ -324,7 +324,7 @@ func (s *Server) setupReservationRoutes(r chi.Router) {
 		r.Use(s.authMiddleware.RequireAuth)
 
 		r.Get("/{reservationId}", s.reservationHandler.GetReservation)
-		r.Patch("/{reservationId}/by_admin", s.reservationHandler.UpdateReservationByAdmin)
+		r.Patch("/{reservationId}", s.reservationHandler.UpdateReservation)
 		r.Patch("/{reservationId}/status", s.reservationHandler.UpdateReservationStatus)
 		r.Post("/{reservationId}/cancel", s.reservationHandler.CancelReservation)
 	})
