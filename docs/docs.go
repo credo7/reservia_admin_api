@@ -24,7 +24,33 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/admin/auth/login": {
+        "/api/admin/dev/ping": {
+            "get": {
+                "description": "Simple ping endpoint for development and health checking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "development"
+                ],
+                "summary": "Development ping endpoint",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
             "post": {
                 "description": "Initiate login process with email verification",
                 "consumes": [
@@ -76,7 +102,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/admin/auth/register": {
+        "/auth/register": {
             "post": {
                 "description": "Initiate registration process with email verification",
                 "consumes": [
@@ -128,7 +154,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/admin/auth/register/employee": {
+        "/auth/register/employee": {
             "get": {
                 "description": "Complete employee registration using invitation link with code_request_id and code",
                 "consumes": [
@@ -191,7 +217,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/admin/auth/tg": {
+        "/auth/tg": {
             "get": {
                 "description": "Initiate Telegram authorization process for admin bot",
                 "consumes": [
@@ -220,7 +246,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/admin/auth/tg/{requestID}": {
+        "/auth/tg/{requestID}": {
             "get": {
                 "description": "Check status of Telegram authorization request from admin bot",
                 "consumes": [
@@ -264,7 +290,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/admin/auth/verify": {
+        "/auth/verify": {
             "post": {
                 "description": "Verify email verification code",
                 "consumes": [
@@ -316,7 +342,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/admin/cities": {
+        "/cities": {
             "get": {
                 "description": "Retrieve all available cities with their information",
                 "consumes": [
@@ -348,7 +374,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/admin/cities/{name}": {
+        "/cities/{name}": {
             "get": {
                 "description": "Retrieve a specific city by its name",
                 "consumes": [
@@ -387,32 +413,6 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/model.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/admin/dev/ping": {
-            "get": {
-                "description": "Simple ping endpoint for development and health checking",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "development"
-                ],
-                "summary": "Development ping endpoint",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
                         }
                     }
                 }
@@ -943,10 +943,8 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/employees/me/email/update": {
-            "post": {
+            },
+            "patch": {
                 "security": [
                     {
                         "BearerAuth": []
@@ -992,6 +990,15 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized - invalid or missing token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Email is already taken",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {

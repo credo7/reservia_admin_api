@@ -36,7 +36,7 @@ func NewAuthHandler(authService *service.AuthService, logger logger.Logger) *Aut
 // @Failure      400  {object}  model.ErrorResponse
 // @Failure      401  {object}  model.ErrorResponse
 // @Failure      500  {object}  model.ErrorResponse
-// @Router       /api/admin/auth/login [post]
+// @Router       /auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req model.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -77,7 +77,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure      400  {object}  model.ErrorResponse
 // @Failure      409  {object}  model.ErrorResponse
 // @Failure      500  {object}  model.ErrorResponse
-// @Router       /api/admin/auth/register [post]
+// @Router       /auth/register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req model.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -118,7 +118,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Failure      400  {object}  model.ErrorResponse
 // @Failure      404  {object}  model.ErrorResponse
 // @Failure      500  {object}  model.ErrorResponse
-// @Router       /api/admin/auth/verify [post]
+// @Router       /auth/verify [post]
 func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 	var req model.VerifyEmailRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -161,7 +161,7 @@ func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 // @Failure      401  {object}  model.ErrorResponse
 // @Failure      404  {object}  model.ErrorResponse
 // @Failure      500  {object}  model.ErrorResponse
-// @Router       /api/admin/auth/register/employee [get]
+// @Router       /auth/register/employee [get]
 func (h *AuthHandler) RegisterEmployee(w http.ResponseWriter, r *http.Request) {
 	// Get query parameters
 	codeRequestID := r.URL.Query().Get("code_request_id")
@@ -202,7 +202,7 @@ func (h *AuthHandler) RegisterEmployee(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Success      200  {object}  model.TelegramAuthResponse
 // @Failure      500  {object}  model.ErrorResponse
-// @Router       /api/admin/auth/tg [get]
+// @Router       /auth/tg [get]
 func (h *AuthHandler) AuthorizeTelegram(w http.ResponseWriter, r *http.Request) {
 	// Call auth service to create Telegram authorization request
 	response, err := h.authService.AuthorizeTelegram(r.Context())
@@ -231,7 +231,7 @@ func (h *AuthHandler) AuthorizeTelegram(w http.ResponseWriter, r *http.Request) 
 // @Success      200  {object}  model.PendingAuthResponse
 // @Failure      404  {object}  model.ErrorResponse
 // @Failure      500  {object}  model.ErrorResponse
-// @Router       /api/admin/auth/tg/{requestID} [get]
+// @Router       /auth/tg/{requestID} [get]
 func (h *AuthHandler) VerifyTelegram(w http.ResponseWriter, r *http.Request) {
 	// Extract request ID from URL parameter
 	requestID := chi.URLParam(r, "requestID")

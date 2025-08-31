@@ -62,7 +62,7 @@ type TelegramAuthRequest struct {
 	TelegramID       int64  `json:"tgId" validate:"required"`
 	TelegramUsername string `json:"tgUsername,omitempty"`
 	TelegramChatID   int64  `json:"tgChatId" validate:"required"`
-	FullName         string `json:"full_name" validate:"required,min=2,max=100"`
+	FullName         string `json:"fullName" validate:"required,min=2,max=100"`
 }
 
 // AuthInitResponse represents initial auth response for login/register (matches Python AuthResponseSchema).
@@ -248,18 +248,18 @@ func (ar *ActionRequest) IsCompleted() bool {
 
 // ActionRequest represents a general action request (adapted from Python ActionRequestSchema for Go/MongoDB).
 type ActionRequest struct {
-	ID             primitive.ObjectID   `json:"id" bson:"_id,omitempty"`
-	EmployeeID     *primitive.ObjectID  `json:"employeeId,omitempty" bson:"employee_id,omitempty"`
-	Action         string               `json:"action" bson:"action"`
-	Email          string               `json:"email,omitempty" bson:"email,omitempty"`
-	FullName       string               `json:"fullName,omitempty" bson:"full_name,omitempty"`
-	ReservationID  *primitive.ObjectID  `json:"reservationId,omitempty" bson:"reservation_id,omitempty"`
-	RestaurantID   *primitive.ObjectID `json:"restaurantId,omitempty" bson:"restaurant_id,omitempty"`
-	Role           string               `json:"role,omitempty" bson:"role,omitempty"`
-	Code           string               `json:"code,omitempty" bson:"code,omitempty"`
-	CreatedAt      time.Time            `json:"createdAt" bson:"created_at"`
-	UpdatedAt      time.Time            `json:"updatedAt" bson:"updated_at"`
-	IsUsed         bool                 `json:"isUsed" bson:"is_used"`
+	ID            primitive.ObjectID  `json:"id" bson:"_id,omitempty"`
+	EmployeeID    *primitive.ObjectID `json:"employeeId,omitempty" bson:"employee_id,omitempty"`
+	Action        string              `json:"action" bson:"action"`
+	Email         string              `json:"email,omitempty" bson:"email,omitempty"`
+	FullName      string              `json:"fullName,omitempty" bson:"full_name,omitempty"`
+	ReservationID *primitive.ObjectID `json:"reservationId,omitempty" bson:"reservation_id,omitempty"`
+	RestaurantID  *primitive.ObjectID `json:"restaurantId,omitempty" bson:"restaurant_id,omitempty"`
+	Role          string              `json:"role,omitempty" bson:"role,omitempty"`
+	Code          string              `json:"code,omitempty" bson:"code,omitempty"`
+	CreatedAt     time.Time           `json:"createdAt" bson:"created_at"`
+	UpdatedAt     time.Time           `json:"updatedAt" bson:"updated_at"`
+	IsUsed        bool                `json:"isUsed" bson:"is_used"`
 }
 
 // Constants for action types (matches Python CodeAction enum)

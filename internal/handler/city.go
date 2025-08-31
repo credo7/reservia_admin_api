@@ -30,7 +30,7 @@ func NewCityHandler(cityService *service.CityService, logger logger.Logger) *Cit
 // @Produce      json
 // @Success      200  {array}   model.CityResponse
 // @Failure      500  {object}  model.ErrorResponse
-// @Router       /api/admin/cities [get]
+// @Router       /cities [get]
 func (h *CityHandler) GetCities(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -69,7 +69,7 @@ func (h *CityHandler) GetCities(w http.ResponseWriter, r *http.Request) {
 // @Success      200  {object}  model.CityResponse
 // @Failure      404  {object}  model.ErrorResponse
 // @Failure      500  {object}  model.ErrorResponse
-// @Router       /api/admin/cities/{name} [get]
+// @Router       /cities/{name} [get]
 func (h *CityHandler) GetCityByName(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

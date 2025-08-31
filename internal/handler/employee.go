@@ -659,7 +659,7 @@ func (h *EmployeeHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	h.writeJSON(w, http.StatusOK, updatedEmployee)
 }
 
-// UpdateEmail handles POST /employees/me/email/update.
+// UpdateEmail handles PATCH /employees/me/email.
 //
 //	@Summary		Request email update
 //	@Description	Initiate email update process with verification code
@@ -670,8 +670,9 @@ func (h *EmployeeHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 //	@Success		200		{object}	model.EmailUpdateResponse	"Email update initiated"
 //	@Failure		400		{object}	map[string]string			"Invalid request body"
 //	@Failure		401		{object}	map[string]string			"Unauthorized - invalid or missing token"
+//	@Failure		409		{object}	map[string]string			"Email is already taken"
 //	@Failure		500		{object}	map[string]string			"Internal server error"
-//	@Router			/employees/me/email/update [post]
+//	@Router			/employees/me/email [patch]
 //	@Security		BearerAuth
 func (h *EmployeeHandler) UpdateEmail(w http.ResponseWriter, r *http.Request) {
 	// Get authenticated employee from middleware context

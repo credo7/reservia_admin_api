@@ -893,7 +893,24 @@ info:
   title: Reservia API
   version: "1.0"
 paths:
-  /api/admin/auth/login:
+  /api/admin/dev/ping:
+    get:
+      consumes:
+      - application/json
+      description: Simple ping endpoint for development and health checking
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Development ping endpoint
+      tags:
+      - development
+  /auth/login:
     post:
       consumes:
       - application/json
@@ -927,7 +944,7 @@ paths:
       summary: User login
       tags:
       - authentication
-  /api/admin/auth/register:
+  /auth/register:
     post:
       consumes:
       - application/json
@@ -961,7 +978,7 @@ paths:
       summary: User registration
       tags:
       - authentication
-  /api/admin/auth/register/employee:
+  /auth/register/employee:
     get:
       consumes:
       - application/json
@@ -1004,7 +1021,7 @@ paths:
       summary: Complete employee registration via invitation
       tags:
       - authentication
-  /api/admin/auth/tg:
+  /auth/tg:
     get:
       consumes:
       - application/json
@@ -1023,7 +1040,7 @@ paths:
       summary: Authorize via Telegram (Admin Bot)
       tags:
       - authentication
-  /api/admin/auth/tg/{requestID}:
+  /auth/tg/{requestID}:
     get:
       consumes:
       - application/json
@@ -1052,7 +1069,7 @@ paths:
       summary: Verify Telegram authorization
       tags:
       - authentication
-  /api/admin/auth/verify:
+  /auth/verify:
     post:
       consumes:
       - application/json
@@ -1086,7 +1103,7 @@ paths:
       summary: Verify email code
       tags:
       - authentication
-  /api/admin/cities:
+  /cities:
     get:
       consumes:
       - application/json
@@ -1107,7 +1124,7 @@ paths:
       summary: Get all cities
       tags:
       - cities
-  /api/admin/cities/{name}:
+  /cities/{name}:
     get:
       consumes:
       - application/json
@@ -1136,23 +1153,6 @@ paths:
       summary: Get city by name
       tags:
       - cities
-  /api/admin/dev/ping:
-    get:
-      consumes:
-      - application/json
-      description: Simple ping endpoint for development and health checking
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Development ping endpoint
-      tags:
-      - development
   /employees:
     get:
       consumes:
@@ -1648,8 +1648,7 @@ paths:
       summary: Disconnect email account
       tags:
       - employees
-  /employees/me/email/update:
-    post:
+    patch:
       consumes:
       - application/json
       description: Initiate email update process with verification code
@@ -1675,6 +1674,12 @@ paths:
             type: object
         "401":
           description: Unauthorized - invalid or missing token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Email is already taken
           schema:
             additionalProperties:
               type: string
