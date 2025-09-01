@@ -10,30 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// LocalTime is a custom time type that handles timestamps without timezone info
-type LocalTime struct {
-	time.Time
-}
-
-// UnmarshalJSON implements custom JSON unmarshaling for timestamps without timezone
-func (lt *LocalTime) UnmarshalJSON(data []byte) error {
-	s := strings.Trim(string(data), "\"")
-	
-	// Parse timestamp without timezone, assume UTC
-	t, err := time.Parse("2006-01-02T15:04:05", s)
-	if err != nil {
-		return fmt.Errorf("cannot parse time %q: %w", s, err)
-	}
-	
-	lt.Time = t.UTC()
-	return nil
-}
-
-// MarshalJSON implements custom JSON marshaling
-func (lt LocalTime) MarshalJSON() ([]byte, error) {
-	return json.Marshal(lt.Time.Format("2006-01-02T15:04:05"))
-}
-
 // Status represents the status of a reservation.
 type Status string
 
@@ -113,9 +89,50 @@ type CreateReservationRequest struct {
 	Phone      string             `json:"phone,omitempty"`
 	FullName   string             `json:"fullName" validate:"required,min=2,max=100"`
 	GuestCount int                `json:"guestCount,omitempty" validate:"omitempty,min=1,max=20"`
-	StartAt    LocalTime          `json:"startAt" validate:"required"`
+	StartAt    time.Time          `json:"startAt" validate:"required"`
 	Duration   string             `json:"duration" validate:"required"` // Format: "2:30" (2 hours 30 minutes)
 	UserNotes  string             `json:"userNotes,omitempty" validate:"max=500"`
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for CreateReservationRequest.
+func (r *CreateReservationRequest) UnmarshalJSON(data []byte) error {
+	// Define a temporary struct with the same fields but StartAt as string
+	type Alias CreateReservationRequest
+	aux := &struct {
+		StartAt string `json:"startAt"`
+		*Alias
+	}{
+		Alias: (*Alias)(r),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Parse the StartAt time with multiple formats
+	timeFormats := []string{
+		time.RFC3339,                // 2025-09-01T10:00:00Z
+		"2006-01-02T15:04:05",       // 2025-09-01T10:00:00
+		"2006-01-02 15:04:05",       // 2025-09-01 10:00:00
+		"2006-01-02T15:04:05.000Z",  // 2025-09-01T10:00:00.000Z
+		"2006-01-02T15:04:05.000",   // 2025-09-01T10:00:00.000
+	}
+
+	var parsedTime time.Time
+	var err error
+	for _, format := range timeFormats {
+		parsedTime, err = time.Parse(format, aux.StartAt)
+		if err == nil {
+			break
+		}
+	}
+
+	if err != nil {
+		return fmt.Errorf("invalid startAt format: %s, expected formats: %s", aux.StartAt, strings.Join(timeFormats, ", "))
+	}
+
+	r.StartAt = parsedTime
+	return nil
 }
 
 // UpdateReservationRequest represents the request to update a reservation.

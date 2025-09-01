@@ -70,7 +70,7 @@ definitions:
       phone:
         type: string
       startAt:
-        $ref: '#/definitions/model.LocalTime'
+        type: string
       tableId:
         type: string
       userNotes:
@@ -322,7 +322,7 @@ definitions:
       role:
         $ref: '#/definitions/model.Role'
     type: object
-  model.ErrorResponse:
+  model.ErrorDetail:
     properties:
       code:
         example: ERR_001
@@ -330,14 +330,17 @@ definitions:
       details:
         example: Additional error details
         type: string
+      is_show:
+        example: false
+        type: boolean
       message:
         example: Error message
         type: string
     type: object
-  model.LocalTime:
+  model.ErrorResponse:
     properties:
-      time.Time:
-        type: string
+      error:
+        $ref: '#/definitions/model.ErrorDetail'
     type: object
   model.LoginRequest:
     properties:
@@ -1625,6 +1628,10 @@ paths:
           description: Email disconnected successfully
           schema:
             $ref: '#/definitions/model.Employee'
+        "400":
+          description: Cannot disconnect email when Telegram is not connected
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
         "401":
           description: Unauthorized - invalid or missing token
           schema:
@@ -1749,6 +1756,10 @@ paths:
           description: Telegram disconnected successfully
           schema:
             $ref: '#/definitions/model.Employee'
+        "400":
+          description: Cannot disconnect Telegram when email is not connected
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
         "401":
           description: Unauthorized - invalid or missing token
           schema:

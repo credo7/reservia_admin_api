@@ -915,6 +915,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/model.Employee"
                         }
                     },
+                    "400": {
+                        "description": "Cannot disconnect email when Telegram is not connected",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
                     "401": {
                         "description": "Unauthorized - invalid or missing token",
                         "schema": {
@@ -1107,6 +1113,12 @@ const docTemplate = `{
                         "description": "Telegram disconnected successfully",
                         "schema": {
                             "$ref": "#/definitions/model.Employee"
+                        }
+                    },
+                    "400": {
+                        "description": "Cannot disconnect Telegram when email is not connected",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     },
                     "401": {
@@ -4102,7 +4114,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "startAt": {
-                    "$ref": "#/definitions/model.LocalTime"
+                    "type": "string"
                 },
                 "tableId": {
                     "type": "string"
@@ -4437,7 +4449,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.ErrorResponse": {
+        "model.ErrorDetail": {
             "type": "object",
             "properties": {
                 "code": {
@@ -4448,17 +4460,21 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Additional error details"
                 },
+                "is_show": {
+                    "type": "boolean",
+                    "example": false
+                },
                 "message": {
                     "type": "string",
                     "example": "Error message"
                 }
             }
         },
-        "model.LocalTime": {
+        "model.ErrorResponse": {
             "type": "object",
             "properties": {
-                "time.Time": {
-                    "type": "string"
+                "error": {
+                    "$ref": "#/definitions/model.ErrorDetail"
                 }
             }
         },

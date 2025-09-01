@@ -639,10 +639,11 @@ func (as *AuthService) ConnectTelegram(ctx context.Context, employeeID primitive
 
 	// Create Telegram verification code for connection
 	tgCode := &model.TelegramVerificationCode{
-		ID:        primitive.NewObjectID(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		IsUsed:    false,
+		ID:         primitive.NewObjectID(),
+		EmployeeID: &employeeID, // Store the requesting employee ID
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+		IsUsed:     false,
 	}
 
 	// Save Telegram verification code to database
@@ -652,7 +653,7 @@ func (as *AuthService) ConnectTelegram(ctx context.Context, employeeID primitive
 	}
 
 	// Generate Telegram bot URL for connection (similar to auth but for connection)
-	tgUrl := fmt.Sprintf("https://t.me/%s?start=connect_request_id=%s",
+	tgUrl := fmt.Sprintf("https://t.me/%s?start=action_request_id=%s",
 		as.config.Telegram.AdminBotUsername, tgCode.ID.Hex())
 
 	as.logger.Info("Telegram connection request created", "request_id", tgCode.ID.Hex(), "employee_id", employeeID)
@@ -756,6 +757,12 @@ func (as *AuthService) DisconnectTelegram(ctx context.Context, employeeID primit
 		return nil, fmt.Errorf("employee not found")
 	}
 
+	// Check if employee has email connected
+	if employee.Email == "" {
+		as.logger.Warn("Cannot disconnect Telegram - no email connected", "employee_id", employeeID)
+		return nil, model.ErrEmailRequiredForTelegramDisconnect
+	}
+
 	// Clear all Telegram fields
 	employee.TelegramIsBot = nil
 	employee.TelegramID = nil
@@ -770,6 +777,35 @@ func (as *AuthService) DisconnectTelegram(ctx context.Context, employeeID primit
 	}
 
 	as.logger.Info("Telegram account disconnected successfully", "employee_id", employeeID)
+	return employee, nil
+}
+
+// DisconnectEmail disconnects email from an employee account.
+func (as *AuthService) DisconnectEmail(ctx context.Context, employeeID primitive.ObjectID) (*model.Employee, error) {
+	as.logger.Info("Disconnecting email account", "employee_id", employeeID)
+
+	// Get employee
+	employee, err := as.employeeRepo.GetByID(ctx, employeeID)
+	if err != nil {
+		as.logger.Error("Failed to get employee for email disconnection", "employee_id", employeeID, "error", err)
+		return nil, fmt.Errorf("employee not found")
+	}
+
+	// Check if employee has Telegram connected
+	if !employee.HasTelegram() {
+		as.logger.Warn("Cannot disconnect email - no Telegram connected", "employee_id", employeeID)
+		return nil, model.ErrTelegramRequiredForEmailDisconnect
+	}
+
+	// Clear email field
+	employee.Email = ""
+	employee.UpdatedAt = time.Now()
+	if err := as.employeeRepo.Update(ctx, employee); err != nil {
+		as.logger.Error("Failed to disconnect email from employee", "employee_id", employeeID, "error", err)
+		return nil, fmt.Errorf("failed to disconnect email account")
+	}
+
+	as.logger.Info("Email account disconnected successfully", "employee_id", employeeID)
 	return employee, nil
 }
 
@@ -852,15 +888,15 @@ func (as *AuthService) ExtendInvitation(ctx context.Context, invitationID string
 
 	// Create new invitation with extended time
 	newInvitation := &model.EmployeeRegistrationCode{
-		ID:             primitive.NewObjectID(),
-		Email:          oldInvitation.Email,
-		FullName:       oldInvitation.FullName,
+		ID:           primitive.NewObjectID(),
+		Email:        oldInvitation.Email,
+		FullName:     oldInvitation.FullName,
 		RestaurantID: oldInvitation.RestaurantID,
-		Role:           oldInvitation.Role,
-		Code:           newInvitationCode,
-		CreatedAt:      time.Now(), // This extends the expiration
-		UpdatedAt:      time.Now(),
-		IsUsed:         false,
+		Role:         oldInvitation.Role,
+		Code:         newInvitationCode,
+		CreatedAt:    time.Now(), // This extends the expiration
+		UpdatedAt:    time.Now(),
+		IsUsed:       false,
 	}
 
 	// Save the new invitation

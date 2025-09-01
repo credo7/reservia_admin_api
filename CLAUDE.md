@@ -156,3 +156,12 @@ Optional variables with defaults:
 - Integration tests for HTTP handlers
 - Use table-driven tests where appropriate
 - Test error scenarios and edge cases
+
+## Known Issues and Debugging Notes
+
+### Code Compilation Errors
+- In `reservia-admin-api/internal/service/reservation.go`, there are compilation errors related to `req.StartAt.Time`:
+  - Line 65: `req.StartAt.Time undefined (type time.Time has no field or method Time)`
+  - Line 86: `req.StartAt.Time undefined (type time.Time has no field or method Time)`
+  - Line 89: `req.StartAt.Time undefined (type time.Time has no field or method Time)`
+  - Likely caused by incorrect type usage or method access for timestamp handling

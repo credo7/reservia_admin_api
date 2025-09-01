@@ -837,10 +837,11 @@ func (h *EmployeeHandler) CheckTelegramConnection(w http.ResponseWriter, r *http
 //	@Tags			employees
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	model.Employee		"Telegram disconnected successfully"
-//	@Failure		401	{object}	map[string]string	"Unauthorized - invalid or missing token"
-//	@Failure		404	{object}	map[string]string	"Employee not found"
-//	@Failure		500	{object}	map[string]string	"Internal server error"
+//	@Success		200	{object}	model.Employee			"Telegram disconnected successfully"
+//	@Failure		400	{object}	model.ErrorResponse		"Cannot disconnect Telegram when email is not connected"
+//	@Failure		401	{object}	map[string]string		"Unauthorized - invalid or missing token"
+//	@Failure		404	{object}	map[string]string		"Employee not found"
+//	@Failure		500	{object}	map[string]string		"Internal server error"
 //	@Router			/employees/me/telegram [delete]
 //	@Security		BearerAuth
 func (h *EmployeeHandler) DisconnectTelegram(w http.ResponseWriter, r *http.Request) {
@@ -856,6 +857,13 @@ func (h *EmployeeHandler) DisconnectTelegram(w http.ResponseWriter, r *http.Requ
 	updatedEmployee, err := h.authService.DisconnectTelegram(r.Context(), employee.ID)
 	if err != nil {
 		h.logger.Error("Failed to disconnect Telegram", "employee_id", employee.ID, "error", err)
+		
+		// Check if it's a validation error with structured response
+		if validationErr, ok := err.(*model.ValidationError); ok {
+			h.writeJSON(w, http.StatusBadRequest, validationErr.Response)
+			return
+		}
+		
 		h.writeError(w, http.StatusInternalServerError, "Failed to disconnect Telegram")
 		return
 	}
@@ -871,10 +879,11 @@ func (h *EmployeeHandler) DisconnectTelegram(w http.ResponseWriter, r *http.Requ
 //	@Tags			employees
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	model.Employee		"Email disconnected successfully"
-//	@Failure		401	{object}	map[string]string	"Unauthorized - invalid or missing token"
-//	@Failure		404	{object}	map[string]string	"Employee not found"
-//	@Failure		500	{object}	map[string]string	"Internal server error"
+//	@Success		200	{object}	model.Employee			"Email disconnected successfully"
+//	@Failure		400	{object}	model.ErrorResponse		"Cannot disconnect email when Telegram is not connected"
+//	@Failure		401	{object}	map[string]string		"Unauthorized - invalid or missing token"
+//	@Failure		404	{object}	map[string]string		"Employee not found"
+//	@Failure		500	{object}	map[string]string		"Internal server error"
 //	@Router			/employees/me/email [delete]
 //	@Security		BearerAuth
 func (h *EmployeeHandler) DisconnectEmail(w http.ResponseWriter, r *http.Request) {
@@ -886,10 +895,23 @@ func (h *EmployeeHandler) DisconnectEmail(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// TODO: Implement email disconnection logic
-	// For now, just return the employee data
-	h.logger.Info("Email disconnected", "employee_id", employee.ID)
-	h.writeJSON(w, http.StatusOK, employee)
+	// Use auth service to handle email disconnection
+	updatedEmployee, err := h.authService.DisconnectEmail(r.Context(), employee.ID)
+	if err != nil {
+		h.logger.Error("Failed to disconnect email", "employee_id", employee.ID, "error", err)
+		
+		// Check if it's a validation error with structured response
+		if validationErr, ok := err.(*model.ValidationError); ok {
+			h.writeJSON(w, http.StatusBadRequest, validationErr.Response)
+			return
+		}
+		
+		h.writeError(w, http.StatusInternalServerError, "Failed to disconnect email")
+		return
+	}
+
+	h.logger.Info("Email disconnected successfully", "employee_id", employee.ID)
+	h.writeJSON(w, http.StatusOK, updatedEmployee)
 }
 
 // Helper methods

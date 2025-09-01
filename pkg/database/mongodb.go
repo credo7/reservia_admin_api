@@ -22,7 +22,19 @@ func NewMongoDB(uri string) (*MongoDB, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	// Configure client options for better resilience to network disruptions
+	clientOptions := options.Client().ApplyURI(uri).
+		SetMaxPoolSize(100).                // Maximum number of connections in the pool
+		SetMinPoolSize(5).                  // Minimum number of connections in the pool
+		SetMaxConnIdleTime(30 * time.Second). // Close connections after 30 seconds of inactivity
+		SetServerSelectionTimeout(5 * time.Second). // Timeout for server selection
+		SetSocketTimeout(30 * time.Second). // Socket timeout
+		SetConnectTimeout(10 * time.Second). // Connection timeout
+		SetHeartbeatInterval(10 * time.Second). // Ping interval to detect connection issues
+		SetRetryWrites(true).               // Enable retryable writes
+		SetRetryReads(true)                 // Enable retryable reads
+
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return nil, err
 	}
