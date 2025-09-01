@@ -79,10 +79,68 @@ func (r *EmployeeRepository) GetByTelegramID(ctx context.Context, telegramID int
 func (r *EmployeeRepository) Update(ctx context.Context, e *model.Employee) error {
 	e.UpdatedAt = time.Now()
 
+	// Build update document with both $set and $unset operations
+	setFields := bson.M{
+		"full_name":   e.FullName,
+		"restaurants": e.Restaurants,
+		"created_at":  e.CreatedAt,
+		"updated_at":  e.UpdatedAt,
+	}
+	
+	// Handle email field - only set if not empty
+	if e.Email != "" {
+		setFields["email"] = e.Email
+	}
+
+	unsetFields := bson.M{}
+
+	// Handle Telegram fields - if nil, unset them; otherwise set them
+	if e.TelegramIsBot != nil {
+		setFields["tg_is_bot"] = e.TelegramIsBot
+	} else {
+		unsetFields["tg_is_bot"] = ""
+	}
+
+	if e.TelegramID != nil {
+		setFields["tg_id"] = e.TelegramID
+	} else {
+		unsetFields["tg_id"] = ""
+	}
+
+	if e.TelegramChatID != nil {
+		setFields["tg_chat_id"] = e.TelegramChatID
+	} else {
+		unsetFields["tg_chat_id"] = ""
+	}
+
+	if e.TelegramUsername != nil {
+		setFields["tg_username"] = e.TelegramUsername
+	} else {
+		unsetFields["tg_username"] = ""
+	}
+
+	if e.TelegramLang != nil {
+		setFields["tg_lang"] = e.TelegramLang
+	} else {
+		unsetFields["tg_lang"] = ""
+	}
+
+	if e.TelegramPremium != nil {
+		setFields["tg_is_premium"] = e.TelegramPremium
+	} else {
+		unsetFields["tg_is_premium"] = ""
+	}
+
+	// Build the update document
+	update := bson.M{"$set": setFields}
+	if len(unsetFields) > 0 {
+		update["$unset"] = unsetFields
+	}
+
 	_, err := r.collection.UpdateOne(
 		ctx,
 		bson.M{"_id": e.ID},
-		bson.M{"$set": e},
+		update,
 	)
 	return err
 }
