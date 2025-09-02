@@ -4,7 +4,6 @@ package model
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -109,7 +108,8 @@ func (r *CreateReservationRequest) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	// Parse the StartAt time with multiple formats
+	// Parse the StartAt time - just parse as UTC for now
+	// The service layer will handle restaurant timezone conversion
 	timeFormats := []string{
 		time.RFC3339,                // 2025-09-01T10:00:00Z
 		"2006-01-02T15:04:05",       // 2025-09-01T10:00:00
@@ -128,7 +128,7 @@ func (r *CreateReservationRequest) UnmarshalJSON(data []byte) error {
 	}
 
 	if err != nil {
-		return fmt.Errorf("invalid startAt format: %s, expected formats: %s", aux.StartAt, strings.Join(timeFormats, ", "))
+		return fmt.Errorf("invalid startAt format: %s", aux.StartAt)
 	}
 
 	r.StartAt = parsedTime

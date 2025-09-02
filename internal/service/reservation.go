@@ -42,9 +42,19 @@ func (rs *ReservationService) CreateReservation(ctx context.Context, restaurantI
 		return nil, fmt.Errorf("restaurant not found")
 	}
 
+	// Check if restaurant is active
+	if !restaurant.IsActive {
+		return nil, fmt.Errorf("restaurant is not active")
+	}
+
 	room := restaurant.GetRoom(roomID)
 	if room == nil {
 		return nil, fmt.Errorf("room not found")
+	}
+
+	// Check if room is enabled
+	if !room.IsEnabled {
+		return nil, fmt.Errorf("room is not enabled")
 	}
 
 	// Validate table ID is provided
@@ -58,13 +68,18 @@ func (rs *ReservationService) CreateReservation(ctx context.Context, restaurantI
 		return nil, fmt.Errorf("table not found")
 	}
 	if !table.IsEnabled {
-		return nil, fmt.Errorf("table is not active")
+		return nil, fmt.Errorf("table is not enabled")
 	}
 
 	// Parse duration and calculate end time
 	endAt, err := rs.parseDurationAndCalculateEndTime(req.StartAt, req.Duration)
 	if err != nil {
 		return nil, fmt.Errorf("invalid duration format: %w", err)
+	}
+
+	// Validate the reservation date and time against schedules and closed dates
+	if err := rs.validateReservationSchedule(room, req.StartAt, endAt); err != nil {
+		return nil, err
 	}
 
 	// Generate unique reservation code
@@ -531,4 +546,122 @@ func (rs *ReservationService) GetReservationCounts(ctx context.Context, restaura
 		UnseenCount:  unseenCount,
 		PendingCount: pendingCount,
 	}, nil
+}
+
+// convertFromRestaurantTimezone converts a time from restaurant timezone to UTC.
+// The frontend sends time in restaurant's local time (e.g., 17:00 Moscow time).
+// We need to convert it to UTC for storage in the database.
+func (rs *ReservationService) convertFromRestaurantTimezone(localTime time.Time, utcOffsetHours int) time.Time {
+	// If the time already has timezone info, return as is
+	if localTime.Location() != time.UTC && localTime.Location() != time.Local {
+		return localTime
+	}
+	
+	// Create a fixed timezone based on the restaurant's UTC offset
+	restaurantTZ := time.FixedZone("Restaurant", utcOffsetHours*3600) // convert hours to seconds
+	
+	// Parse the time as if it's in the restaurant's timezone
+	year, month, day := localTime.Date()
+	hour, min, sec := localTime.Clock()
+	
+	// Create time in restaurant's timezone, then convert to UTC
+	restaurantTime := time.Date(year, month, day, hour, min, sec, localTime.Nanosecond(), restaurantTZ)
+	
+	return restaurantTime.UTC()
+}
+
+// validateReservationSchedule validates the reservation against room schedules and closed dates.
+func (rs *ReservationService) validateReservationSchedule(room *model.Room, startAt, endAt time.Time) error {
+	// Times are already in restaurant's local timezone, no conversion needed
+	
+	// Check if the date is in the closed dates list
+	dateStr := startAt.Format("2006-01-02")
+	for _, closedDate := range room.ClosedDates {
+		if closedDate == dateStr {
+			return fmt.Errorf("restaurant is closed on %s", dateStr)
+		}
+	}
+	
+	// Check special date schedules first (they override regular schedule)
+	for _, specialSchedule := range room.SpecialDateSchedules {
+		if !specialSchedule.IsActive {
+			continue
+		}
+		
+		// Check if this date has a special schedule
+		isSpecialDate := false
+		for _, specialDate := range specialSchedule.Dates {
+			if specialDate == dateStr {
+				isSpecialDate = true
+				break
+			}
+		}
+		
+		if isSpecialDate {
+			// Validate against special schedule
+			if len(specialSchedule.TimeRanges) == 0 {
+				return fmt.Errorf("restaurant is closed on %s (special schedule)", dateStr)
+			}
+			
+			return rs.validateTimeAgainstRanges(startAt, endAt, specialSchedule.TimeRanges)
+		}
+	}
+	
+	// No special schedule found, validate against regular schedule
+	return rs.validateTimeAgainstRegularSchedule(startAt, endAt, room.RegularSchedule)
+}
+
+// validateTimeAgainstRegularSchedule validates time against the regular weekly schedule.
+func (rs *ReservationService) validateTimeAgainstRegularSchedule(localStartAt, localEndAt time.Time, schedule model.WeekSchedule) error {
+	weekday := localStartAt.Weekday()
+	
+	var daySchedule model.WeekDaySchedule
+	switch weekday {
+	case time.Monday:
+		daySchedule = schedule.Monday
+	case time.Tuesday:
+		daySchedule = schedule.Tuesday
+	case time.Wednesday:
+		daySchedule = schedule.Wednesday
+	case time.Thursday:
+		daySchedule = schedule.Thursday
+	case time.Friday:
+		daySchedule = schedule.Friday
+	case time.Saturday:
+		daySchedule = schedule.Saturday
+	case time.Sunday:
+		daySchedule = schedule.Sunday
+	}
+	
+	if !daySchedule.IsActive {
+		return fmt.Errorf("restaurant is closed on %s", weekday.String())
+	}
+	
+	if len(daySchedule.TimeRanges) == 0 {
+		return fmt.Errorf("no operating hours defined for %s", weekday.String())
+	}
+	
+	return rs.validateTimeAgainstRanges(localStartAt, localEndAt, daySchedule.TimeRanges)
+}
+
+// validateTimeAgainstRanges validates time against a list of time ranges.
+func (rs *ReservationService) validateTimeAgainstRanges(localStartAt, localEndAt time.Time, timeRanges []model.TimeRange) error {
+	startTime := localStartAt.Format("15:04")
+	endTime := localEndAt.Format("15:04")
+	
+	for _, timeRange := range timeRanges {
+		// Check if the reservation time falls within this range
+		if startTime >= timeRange.StartTime && endTime <= timeRange.EndTime {
+			return nil // Valid time range found
+		}
+	}
+	
+	// Build error message with available time ranges
+	var availableRanges []string
+	for _, timeRange := range timeRanges {
+		availableRanges = append(availableRanges, fmt.Sprintf("%s-%s", timeRange.StartTime, timeRange.EndTime))
+	}
+	
+	return fmt.Errorf("reservation time %s-%s is outside operating hours. Available: %s", 
+		startTime, endTime, strings.Join(availableRanges, ", "))
 }
