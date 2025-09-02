@@ -5101,9 +5101,6 @@ const docTemplate = `{
                 "duration": {
                     "type": "string"
                 },
-                "endAt": {
-                    "type": "string"
-                },
                 "guestCount": {
                     "type": "integer",
                     "maximum": 20,

@@ -764,8 +764,6 @@ definitions:
         type: string
       duration:
         type: string
-      endAt:
-        type: string
       guestCount:
         maximum: 20
         minimum: 1

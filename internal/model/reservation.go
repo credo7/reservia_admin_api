@@ -138,12 +138,54 @@ func (r *CreateReservationRequest) UnmarshalJSON(data []byte) error {
 // UpdateReservationRequest represents the request to update a reservation.
 type UpdateReservationRequest struct {
 	StartAt            *time.Time          `json:"startAt,omitempty"`
-	EndAt              *time.Time          `json:"endAt,omitempty"`
 	Duration           *string             `json:"duration,omitempty"`
 	TableID            *primitive.ObjectID `json:"tableId,omitempty"`
 	GuestCount         *int                `json:"guestCount,omitempty" validate:"omitempty,min=1,max=20"`
 	AdminNotes         *string             `json:"adminNotes,omitempty"`
 	CancellationReason *string             `json:"cancellationReason,omitempty"`
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for UpdateReservationRequest.
+func (r *UpdateReservationRequest) UnmarshalJSON(data []byte) error {
+	// Define a temporary struct with the same fields but times as strings
+	type Alias UpdateReservationRequest
+	aux := &struct {
+		StartAt *string `json:"startAt,omitempty"`
+		*Alias
+	}{
+		Alias: (*Alias)(r),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Parse time formats
+	timeFormats := []string{
+		time.RFC3339,                // 2025-09-01T10:00:00Z
+		"2006-01-02T15:04:05",       // 2025-09-01T10:00:00
+		"2006-01-02 15:04:05",       // 2025-09-01 10:00:00
+		"2006-01-02T15:04:05.000Z",  // 2025-09-01T10:00:00.000Z
+		"2006-01-02T15:04:05.000",   // 2025-09-01T10:00:00.000
+	}
+
+	// Parse StartAt if provided
+	if aux.StartAt != nil && *aux.StartAt != "" {
+		var parsedTime time.Time
+		var err error
+		for _, format := range timeFormats {
+			parsedTime, err = time.Parse(format, *aux.StartAt)
+			if err == nil {
+				r.StartAt = &parsedTime
+				break
+			}
+		}
+		if err != nil {
+			return fmt.Errorf("invalid startAt format: %s", *aux.StartAt)
+		}
+	}
+
+	return nil
 }
 
 // UpdateReservationStatusRequest represents the request to update reservation status.
@@ -229,6 +271,10 @@ func (r *Reservation) IsOverlapping(other *Reservation) bool {
 	}
 
 	// Check time overlap
+	// Two reservations overlap if:
+	// - R1 starts before R2 ends AND R1 ends after R2 starts
+	// Note: We use < and > (not <= and >=) because adjacent reservations should not be considered overlapping
+	// Example: 10:00-11:00 and 11:00-12:00 do not overlap
 	return r.StartAt.Before(other.EndAt) && r.EndAt.After(other.StartAt)
 }
 

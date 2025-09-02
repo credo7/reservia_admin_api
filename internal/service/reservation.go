@@ -200,30 +200,27 @@ func (rs *ReservationService) generateReservationCode() string {
 
 // checkForConflicts checks if a reservation conflicts with existing ones.
 func (rs *ReservationService) checkForConflicts(ctx context.Context, reservation *model.Reservation) ([]*model.Reservation, error) {
-	// Get all active reservations for the same restaurant and time period
-	allReservations, err := rs.reservationRepo.GetByRestaurantID(ctx, reservation.RestaurantID, 1000, 0)
+	// Efficiently get only active reservations for the specific table in the time range
+	activeReservations, err := rs.reservationRepo.GetActiveReservationsForTable(
+		ctx, 
+		reservation.RestaurantID, 
+		reservation.TableID, 
+		reservation.StartAt, 
+		reservation.EndAt,
+	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get active reservations: %w", err)
 	}
 
 	var conflicts []*model.Reservation
-	for _, existing := range allReservations {
-		// Skip if different table
-		if existing.TableID != reservation.TableID {
-			continue
-		}
-
-		// Skip if not active
-		if !existing.IsActive() {
-			continue
-		}
-
+	for _, existing := range activeReservations {
 		// Skip if same reservation (for updates)
 		if existing.ID == reservation.ID {
 			continue
 		}
 
-		// Check for time overlap
+		// The repository method already filters by table and active status,
+		// so we just need to check for actual time overlap
 		if reservation.IsOverlapping(existing) {
 			conflicts = append(conflicts, existing)
 		}
@@ -345,16 +342,57 @@ func (rs *ReservationService) UpdateReservation(ctx context.Context, id primitiv
 		return nil, err
 	}
 
+	// Get restaurant and room for validation (if time or table changes)
+	var restaurant *model.Restaurant
+	var room *model.Room
+	if req.StartAt != nil || req.Duration != nil || req.TableID != nil {
+		var err error
+		restaurant, err = rs.restaurantRepo.GetByID(ctx, reservation.RestaurantID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get restaurant: %w", err)
+		}
+		if restaurant == nil {
+			return nil, fmt.Errorf("restaurant not found")
+		}
+
+		// Check if restaurant is active
+		if !restaurant.IsActive {
+			return nil, fmt.Errorf("restaurant is not active")
+		}
+
+		room = restaurant.GetRoom(reservation.RoomID)
+		if room == nil {
+			return nil, fmt.Errorf("room not found")
+		}
+
+		// Check if room is enabled
+		if !room.IsEnabled {
+			return nil, fmt.Errorf("room is not enabled")
+		}
+	}
+
 	// Update reservation fields
 	if req.StartAt != nil {
+		// Calculate existing duration before updating start time
+		existingDuration := reservation.EndAt.Sub(reservation.StartAt)
+		
 		reservation.StartAt = *req.StartAt
 		// Recalculate working day date
 		reservation.WorkingDayDate = time.Date(req.StartAt.Year(), req.StartAt.Month(), req.StartAt.Day(), 0, 0, 0, 0, req.StartAt.Location())
-	}
-	if req.EndAt != nil {
-		reservation.EndAt = *req.EndAt
+		
+		// If duration is provided, use it; otherwise maintain existing duration
+		if req.Duration != nil {
+			endAt, err := rs.parseDurationAndCalculateEndTime(reservation.StartAt, *req.Duration)
+			if err != nil {
+				return nil, fmt.Errorf("invalid duration format: %w", err)
+			}
+			reservation.EndAt = endAt
+		} else {
+			// Maintain existing duration when changing start time
+			reservation.EndAt = reservation.StartAt.Add(existingDuration)
+		}
 	} else if req.Duration != nil {
-		// Calculate end time from duration
+		// Only duration changed, keep same start time
 		endAt, err := rs.parseDurationAndCalculateEndTime(reservation.StartAt, *req.Duration)
 		if err != nil {
 			return nil, fmt.Errorf("invalid duration format: %w", err)
@@ -362,23 +400,22 @@ func (rs *ReservationService) UpdateReservation(ctx context.Context, id primitiv
 		reservation.EndAt = endAt
 	}
 	if req.TableID != nil {
-		// Validate table exists
-		restaurant, err := rs.restaurantRepo.GetByID(ctx, reservation.RestaurantID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get restaurant: %w", err)
-		}
-		room := restaurant.GetRoom(reservation.RoomID)
-		if room == nil {
-			return nil, fmt.Errorf("room not found")
-		}
+		// Validate table exists and is enabled
 		table := room.GetTable(*req.TableID)
 		if table == nil {
 			return nil, fmt.Errorf("table not found")
 		}
 		if !table.IsEnabled {
-			return nil, fmt.Errorf("table is not active")
+			return nil, fmt.Errorf("table is not enabled")
 		}
 		reservation.TableID = *req.TableID
+	}
+
+	// Validate schedule if time changed
+	if req.StartAt != nil || req.Duration != nil {
+		if err := rs.validateReservationSchedule(room, reservation.StartAt, reservation.EndAt); err != nil {
+			return nil, err
+		}
 	}
 	if req.GuestCount != nil {
 		reservation.GuestCount = *req.GuestCount
@@ -393,7 +430,7 @@ func (rs *ReservationService) UpdateReservation(ctx context.Context, id primitiv
 	reservation.UpdatedAt = time.Now()
 
 	// Check for conflicts if time or table changed
-	if req.StartAt != nil || req.EndAt != nil || req.Duration != nil || req.TableID != nil {
+	if req.StartAt != nil || req.Duration != nil || req.TableID != nil {
 		conflicts, err := rs.checkForConflicts(ctx, reservation)
 		if err != nil {
 			return nil, fmt.Errorf("failed to check for conflicts: %w", err)
