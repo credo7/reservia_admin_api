@@ -4180,12 +4180,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SpecialDateSchedule"
                     }
-                },
-                "tables": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Table"
-                    }
                 }
             }
         },
@@ -4231,7 +4225,7 @@ const docTemplate = `{
                 "code": {
                     "$ref": "#/definitions/model.ElementCode"
                 },
-                "font_size": {
+                "fontSize": {
                     "type": "integer"
                 },
                 "height": {
@@ -4241,12 +4235,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "index": {
+                    "description": "Z-order on the map",
                     "type": "integer"
                 },
-                "is_enabled": {
+                "isEnabled": {
                     "type": "boolean"
                 },
-                "room_id": {
+                "roomId": {
                     "type": "string"
                 },
                 "rotation": {
@@ -4258,7 +4253,8 @@ const docTemplate = `{
                         "$ref": "#/definitions/model.Element"
                     }
                 },
-                "table_index": {
+                "tableIndex": {
+                    "description": "Table identifier/name (for table elements)",
                     "type": "integer"
                 },
                 "text": {
@@ -4456,11 +4452,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "ERR_001"
                 },
-                "details": {
-                    "type": "string",
-                    "example": "Additional error details"
-                },
-                "is_show": {
+                "isShow": {
                     "type": "boolean",
                     "example": false
                 },
@@ -4858,12 +4850,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SpecialDateSchedule"
                     }
-                },
-                "tables": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Table"
-                    }
                 }
             }
         },
@@ -4973,23 +4959,6 @@ const docTemplate = `{
                 },
                 "key": {
                     "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.Table": {
-            "type": "object",
-            "properties": {
-                "capacity": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "isEnabled": {
-                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"
@@ -5194,12 +5163,6 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.SpecialDateSchedule"
-                    }
-                },
-                "tables": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Table"
                     }
                 }
             }

@@ -120,10 +120,6 @@ definitions:
         items:
           $ref: '#/definitions/model.SpecialDateSchedule'
         type: array
-      tables:
-        items:
-          $ref: '#/definitions/model.Table'
-        type: array
     required:
     - name
     type: object
@@ -157,17 +153,18 @@ definitions:
     properties:
       code:
         $ref: '#/definitions/model.ElementCode'
-      font_size:
+      fontSize:
         type: integer
       height:
         type: integer
       id:
         type: string
       index:
+        description: Z-order on the map
         type: integer
-      is_enabled:
+      isEnabled:
         type: boolean
-      room_id:
+      roomId:
         type: string
       rotation:
         type: integer
@@ -175,7 +172,8 @@ definitions:
         items:
           $ref: '#/definitions/model.Element'
         type: array
-      table_index:
+      tableIndex:
+        description: Table identifier/name (for table elements)
         type: integer
       text:
         type: string
@@ -327,10 +325,7 @@ definitions:
       code:
         example: ERR_001
         type: string
-      details:
-        example: Additional error details
-        type: string
-      is_show:
+      isShow:
         example: false
         type: boolean
       message:
@@ -599,10 +594,6 @@ definitions:
         items:
           $ref: '#/definitions/model.SpecialDateSchedule'
         type: array
-      tables:
-        items:
-          $ref: '#/definitions/model.Table'
-        type: array
     type: object
   model.SaveElementsRequest:
     properties:
@@ -681,17 +672,6 @@ definitions:
         type: string
       key:
         type: string
-      name:
-        type: string
-    type: object
-  model.Table:
-    properties:
-      capacity:
-        type: integer
-      id:
-        type: string
-      isEnabled:
-        type: boolean
       name:
         type: string
     type: object
@@ -828,10 +808,6 @@ definitions:
       specialDateSchedules:
         items:
           $ref: '#/definitions/model.SpecialDateSchedule'
-        type: array
-      tables:
-        items:
-          $ref: '#/definitions/model.Table'
         type: array
     type: object
   model.UrlNameAvailabilityResponse:

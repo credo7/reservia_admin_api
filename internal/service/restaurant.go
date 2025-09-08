@@ -488,11 +488,8 @@ func (rs *RestaurantService) AddRoom(ctx context.Context, restaurantID primitive
 		isEnabled = *req.IsEnabled
 	}
 
-	// Initialize tables slice if nil
-	tables := req.Tables
-	if tables == nil {
-		tables = []model.Table{}
-	}
+	// Initialize elements slice
+	elements := []model.Element{}
 
 	// Initialize closed dates slice if nil
 	closedDates := req.ClosedDates
@@ -505,7 +502,7 @@ func (rs *RestaurantService) AddRoom(ctx context.Context, restaurantID primitive
 		ID:          primitive.NewObjectID(),
 		Name:        req.Name,
 		IsEnabled:   isEnabled,
-		Tables:      tables,
+		Elements:    elements,
 		ClosedDates: closedDates,
 	}
 
@@ -563,9 +560,7 @@ func (rs *RestaurantService) UpdateRoom(ctx context.Context, restaurantID primit
 	if req.IsEnabled != nil {
 		room.IsEnabled = *req.IsEnabled
 	}
-	if req.Tables != nil {
-		room.Tables = req.Tables
-	}
+	// Elements are managed separately through element endpoints
 	if req.RegularSchedule != nil {
 		room.RegularSchedule = *req.RegularSchedule
 	}

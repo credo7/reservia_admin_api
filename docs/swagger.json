@@ -4174,12 +4174,6 @@
                     "items": {
                         "$ref": "#/definitions/model.SpecialDateSchedule"
                     }
-                },
-                "tables": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Table"
-                    }
                 }
             }
         },
@@ -4225,7 +4219,7 @@
                 "code": {
                     "$ref": "#/definitions/model.ElementCode"
                 },
-                "font_size": {
+                "fontSize": {
                     "type": "integer"
                 },
                 "height": {
@@ -4235,12 +4229,13 @@
                     "type": "string"
                 },
                 "index": {
+                    "description": "Z-order on the map",
                     "type": "integer"
                 },
-                "is_enabled": {
+                "isEnabled": {
                     "type": "boolean"
                 },
-                "room_id": {
+                "roomId": {
                     "type": "string"
                 },
                 "rotation": {
@@ -4252,7 +4247,8 @@
                         "$ref": "#/definitions/model.Element"
                     }
                 },
-                "table_index": {
+                "tableIndex": {
+                    "description": "Table identifier/name (for table elements)",
                     "type": "integer"
                 },
                 "text": {
@@ -4450,11 +4446,7 @@
                     "type": "string",
                     "example": "ERR_001"
                 },
-                "details": {
-                    "type": "string",
-                    "example": "Additional error details"
-                },
-                "is_show": {
+                "isShow": {
                     "type": "boolean",
                     "example": false
                 },
@@ -4852,12 +4844,6 @@
                     "items": {
                         "$ref": "#/definitions/model.SpecialDateSchedule"
                     }
-                },
-                "tables": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Table"
-                    }
                 }
             }
         },
@@ -4967,23 +4953,6 @@
                 },
                 "key": {
                     "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.Table": {
-            "type": "object",
-            "properties": {
-                "capacity": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "isEnabled": {
-                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"
@@ -5188,12 +5157,6 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.SpecialDateSchedule"
-                    }
-                },
-                "tables": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Table"
                     }
                 }
             }

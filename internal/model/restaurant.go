@@ -52,20 +52,12 @@ type Room struct {
 	ID                   primitive.ObjectID    `json:"id" bson:"_id,omitempty"`
 	Name                 string                `json:"name" bson:"name"`
 	IsEnabled            bool                  `json:"isEnabled" bson:"is_enabled"`
-	Tables               []Table               `json:"tables" bson:"tables"`
 	Elements             []Element             `json:"elements" bson:"elements"`
 	RegularSchedule      WeekSchedule          `json:"regularSchedule" bson:"regular_schedule"`
 	SpecialDateSchedules []SpecialDateSchedule `json:"specialDateSchedules" bson:"special_date_schedules"`
 	ClosedDates          []string              `json:"closedDates" bson:"closed_dates"` // YYYY-MM-DD format
 }
 
-// Table represents a table within a room.
-type Table struct {
-	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Name      string             `json:"name" bson:"name"`
-	Capacity  int                `json:"capacity" bson:"capacity"`
-	IsEnabled bool               `json:"isEnabled" bson:"is_enabled"`
-}
 
 // Enhanced Schedule Models (matches Python implementation)
 
@@ -504,7 +496,6 @@ type CreateSubURLRequest struct {
 type CreateRoomRequest struct {
 	Name                 string                `json:"name" validate:"required,min=1,max=100"`
 	IsEnabled            *bool                 `json:"isEnabled,omitempty"`
-	Tables               []Table               `json:"tables,omitempty"`
 	RegularSchedule      *WeekSchedule         `json:"regularSchedule,omitempty"`
 	SpecialDateSchedules []SpecialDateSchedule `json:"specialDateSchedules,omitempty"`
 	ClosedDates          []string              `json:"closedDates,omitempty"`
@@ -514,7 +505,6 @@ type CreateRoomRequest struct {
 type UpdateRoomRequest struct {
 	Name                 *string               `json:"name,omitempty" validate:"omitempty,min=1,max=100"`
 	IsEnabled            *bool                 `json:"isEnabled,omitempty"`
-	Tables               []Table               `json:"tables,omitempty"`
 	RegularSchedule      *WeekSchedule         `json:"regularSchedule,omitempty"`
 	SpecialDateSchedules []SpecialDateSchedule `json:"specialDateSchedules,omitempty"`
 	ClosedDates          []string              `json:"closedDates,omitempty"`
@@ -598,19 +588,19 @@ const (
 // Element represents a table, seat, or other UI element within a room.
 type Element struct {
 	ID         primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	RoomID     primitive.ObjectID `json:"room_id" bson:"room_id"`
+	RoomID     primitive.ObjectID `json:"roomId" bson:"room_id"`
 	Type       ElementType        `json:"type" bson:"type"`
 	Code       ElementCode        `json:"code" bson:"code"`
-	Index      int                `json:"index" bson:"index"`
+	Index      int                `json:"index" bson:"index"`                                      // Z-order on the map
 	Rotation   int                `json:"rotation" bson:"rotation"`
-	TableIndex *int               `json:"table_index,omitempty" bson:"table_index,omitempty"`
+	TableIndex *int               `json:"tableIndex,omitempty" bson:"table_index,omitempty"`       // Table identifier/name (for table elements)
 	X          float64            `json:"x" bson:"x"`
 	Y          float64            `json:"y" bson:"y"`
 	Width      int                `json:"width" bson:"width"`
 	Height     int                `json:"height" bson:"height"`
 	Text       *string            `json:"text,omitempty" bson:"text,omitempty"`
-	FontSize   *int               `json:"font_size,omitempty" bson:"font_size,omitempty"`
-	IsEnabled  bool               `json:"is_enabled" bson:"is_enabled"`
+	FontSize   *int               `json:"fontSize,omitempty" bson:"font_size,omitempty"`
+	IsEnabled  bool               `json:"isEnabled" bson:"is_enabled"`
 	Seats      []Element          `json:"seats,omitempty" bson:"seats,omitempty"`
 }
 
