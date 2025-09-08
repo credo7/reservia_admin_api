@@ -3,8 +3,8 @@ package repository
 
 import (
 	"context"
-	"time"
 	"reservia-admin-api/internal/model"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -94,7 +94,7 @@ type ReservationRepository interface {
 	// GetActiveReservationsInTimeRange retrieves active reservations (PENDING, CONFIRMED, ARRIVED) that overlap with the given time range
 	GetActiveReservationsInTimeRange(ctx context.Context, filters model.TableAvailabilityFilters) ([]*model.Reservation, error)
 
-	// GetActiveReservationsForTable retrieves active reservations for a specific table in a time range  
+	// GetActiveReservationsForTable retrieves active reservations for a specific table in a time range
 	GetActiveReservationsForTable(ctx context.Context, restaurantID, tableID primitive.ObjectID, startAt, endAt time.Time) ([]*model.Reservation, error)
 
 	// GetActiveReservationsForRoom retrieves active reservations for all tables in a room within a time range
@@ -151,6 +151,16 @@ type AuthRepository interface {
 	CreateEmailUpdateVerificationCode(ctx context.Context, code *model.EmailUpdateVerificationCode) error
 	GetEmailUpdateVerificationCodeByID(ctx context.Context, id primitive.ObjectID) (*model.EmailUpdateVerificationCode, error)
 	UpdateEmailUpdateVerificationCode(ctx context.Context, code *model.EmailUpdateVerificationCode) error
+
+	// Invalidate existing codes (security improvements)
+	InvalidateActiveLoginCodes(ctx context.Context, email string) error
+	InvalidateActiveRegisterCodes(ctx context.Context, email string) error
+
+	// Failed attempt tracking (security improvements)
+	RecordFailedAttempt(ctx context.Context, email, action string) error
+	GetFailedAttempt(ctx context.Context, email, action string) (*model.FailedAttempt, error)
+	GetFailedAttemptsByEmail(ctx context.Context, email string) ([]*model.FailedAttempt, error)
+	ClearFailedAttempts(ctx context.Context, email string) error
 }
 
 // Repositories aggregates all repository interfaces.

@@ -51,6 +51,14 @@ func main() {
 		log.Fatal("Failed to connect to database", "error", err)
 	}
 	defer db.Close()
+	
+	// Create database indexes
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	if err = db.CreateIndexes(ctx, log); err != nil {
+		cancel()
+		log.Fatal("Failed to create database indexes", "error", err)
+	}
+	cancel()
 
 	// Initialize HTTP server
 	srv, err := server.New(cfg, db, log)
@@ -74,10 +82,10 @@ func main() {
 	log.Info("Shutting down server...")
 
 	// Graceful shutdown with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Fatal("Server forced to shutdown", "error", err)
 	}
 

@@ -7,8 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"reservia-admin-api/pkg/logger"
 )
 
 // MongoDB represents a MongoDB database connection.
@@ -97,4 +99,118 @@ func extractDatabaseNameFromURI(uri string) string {
 	// Split by "/" and take the first part (database name)
 	parts := strings.Split(path, "/")
 	return parts[0]
+}
+
+// CreateIndexes creates all necessary database indexes at application startup.
+func (m *MongoDB) CreateIndexes(ctx context.Context, log logger.Logger) error {
+	log.Info("Creating database indexes...")
+	
+	// Get all existing indexes once for efficiency
+	allExistingIndexes, err := m.getAllExistingIndexes(ctx)
+	if err != nil {
+		return err
+	}
+	
+	// Create indexes for each collection
+	if err := m.createFailedAttemptsIndexes(ctx, log, allExistingIndexes); err != nil {
+		return err
+	}
+	
+	// Future index creation can be added here:
+	// if err := m.createReservationIndexes(ctx, log, allExistingIndexes); err != nil {
+	//     return err
+	// }
+	// if err := m.createEmployeeIndexes(ctx, log, allExistingIndexes); err != nil {
+	//     return err
+	// }
+	
+	log.Info("Database indexes created successfully")
+	return nil
+}
+
+// createFailedAttemptsIndexes creates indexes for the failed_attempts collection.
+func (m *MongoDB) createFailedAttemptsIndexes(ctx context.Context, log logger.Logger, existingIndexes map[string]map[string]bool) error {
+	collectionName := "failed_attempts"
+	collection := m.database.Collection(collectionName)
+	
+	// Get existing indexes for this collection
+	collectionIndexes := existingIndexes[collectionName]
+	if collectionIndexes == nil {
+		collectionIndexes = make(map[string]bool)
+	}
+	
+	// Define indexes that need to be created
+	indexesToCreate := []mongo.IndexModel{}
+	
+	// TTL index for auto-expiring failed attempts
+	ttlIndexName := "expires_at_ttl"
+	if !collectionIndexes[ttlIndexName] {
+		indexesToCreate = append(indexesToCreate, mongo.IndexModel{
+			Keys: bson.D{{Key: "expires_at", Value: 1}},
+			Options: &options.IndexOptions{
+				ExpireAfterSeconds: &[]int32{0}[0], // Expire at the time specified in expires_at field
+				Name:               &ttlIndexName,
+			},
+		})
+	}
+	
+	// Create indexes if any need to be created
+	if len(indexesToCreate) > 0 {
+		_, err := collection.Indexes().CreateMany(ctx, indexesToCreate)
+		if err != nil {
+			log.Error("Failed to create indexes", "collection", collectionName, "error", err)
+			return err
+		}
+		log.Info("Created indexes", "collection", collectionName, "count", len(indexesToCreate))
+	} else {
+		log.Info("All indexes already exist", "collection", collectionName)
+	}
+	
+	return nil
+}
+
+// getAllExistingIndexes returns a map of all existing indexes for all collections.
+// Returns map[collectionName]map[indexName]bool
+func (m *MongoDB) getAllExistingIndexes(ctx context.Context) (map[string]map[string]bool, error) {
+	allIndexes := make(map[string]map[string]bool)
+	
+	// List of collections to check for indexes
+	collections := []string{
+		"failed_attempts",
+		// Add more collections here as needed:
+		// "reservations",
+		// "employees",
+		// "restaurants",
+	}
+	
+	for _, collectionName := range collections {
+		collection := m.database.Collection(collectionName)
+		cursor, err := collection.Indexes().List(ctx)
+		if err != nil {
+			// Collection might not exist yet, skip
+			continue
+		}
+		
+		collectionIndexes := make(map[string]bool)
+		for cursor.Next(ctx) {
+			var index bson.M
+			if err := cursor.Decode(&index); err != nil {
+				cursor.Close(ctx)
+				return nil, err
+			}
+			
+			if name, ok := index["name"].(string); ok {
+				collectionIndexes[name] = true
+			}
+		}
+		cursor.Close(ctx)
+		
+		if err := cursor.Err(); err != nil {
+			return nil, err
+		}
+		
+		allIndexes[collectionName] = collectionIndexes
+	}
+	
+	return allIndexes, nil
 }

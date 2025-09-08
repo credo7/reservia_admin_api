@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
@@ -42,13 +43,21 @@ func NewAuthService(authRepo repository.AuthRepository, employeeRepo repository.
 
 // Login initiates the passwordless login process for employees by sending a verification code.
 func (as *AuthService) Login(ctx context.Context, req *model.LoginRequest) (*model.AuthInitResponse, error) {
-	as.logger.Info("Attempting login", "email", req.Email)
+	normalizedEmail := as.normalizeEmail(req.Email)
+	req.Email = normalizedEmail
+
+	as.logger.Info("Attempting login", "email_domain", as.getEmailDomain(normalizedEmail))
+
+	// Invalidate any existing active login verification codes for this email
+	if err := as.authRepo.InvalidateActiveLoginCodes(ctx, normalizedEmail); err != nil {
+		as.logger.Error("Failed to invalidate existing codes", "error", err)
+	}
 
 	// Find employee by email
-	_, err := as.employeeRepo.GetByEmail(ctx, req.Email)
+	_, err := as.employeeRepo.GetByEmail(ctx, normalizedEmail)
 	if err != nil {
-		as.logger.Error("Employee not found during login", "email", req.Email, "error", err)
-		return nil, fmt.Errorf("invalid credentials")
+		as.logger.Error("Employee not found during login", "email_domain", as.getEmailDomain(normalizedEmail), "error", err)
+		return nil, model.ErrInvalidCredentials
 	}
 
 	// Generate verification code
@@ -61,7 +70,7 @@ func (as *AuthService) Login(ctx context.Context, req *model.LoginRequest) (*mod
 	// Save verification code
 	codeEntity := &model.LoginVerificationCode{
 		ID:        primitive.NewObjectID(),
-		Email:     req.Email,
+		Email:     normalizedEmail,
 		Code:      verificationCode,
 		IsUsed:    false,
 		CreatedAt: time.Now(),
@@ -69,21 +78,22 @@ func (as *AuthService) Login(ctx context.Context, req *model.LoginRequest) (*mod
 	}
 
 	if err := as.authRepo.CreateLoginVerificationCode(ctx, codeEntity); err != nil {
-		as.logger.Error("Failed to save verification code", "email", req.Email, "error", err)
+		as.logger.Error("Failed to save verification code", "email_domain", as.getEmailDomain(normalizedEmail), "error", err)
 		return nil, fmt.Errorf("failed to save verification code")
 	}
 
 	// Send email verification code via RabbitMQ
 	if as.emailProducer != nil {
-		if err := as.emailProducer.SendAuthEmail(as.queueName, req.Email, verificationCode); err != nil {
-			as.logger.Error("Failed to send email verification", "email", req.Email, "error", err)
+		if err := as.emailProducer.SendAuthEmail(as.queueName, normalizedEmail, verificationCode); err != nil {
+			as.logger.Error("Failed to send email verification", "email_domain", as.getEmailDomain(normalizedEmail), "error", err)
 			// Note: We don't return error here as the verification code is saved and user can still verify manually
 		} else {
-			as.logger.Info("Email verification task sent", "email", req.Email)
+			as.logger.Info("Email verification task sent", "email_domain", as.getEmailDomain(normalizedEmail))
 		}
 	}
 
-	as.logger.Info("Login verification code generated", "email", req.Email, "code_request_id", codeEntity.ID.Hex())
+	// Fix #3: Remove sensitive logging - don't log email or verification codes
+	as.logger.Info("Login initiated", "code_request_id", codeEntity.ID.Hex())
 
 	return &model.AuthInitResponse{
 		CodeRequestID: codeEntity.ID.Hex(),
@@ -92,13 +102,23 @@ func (as *AuthService) Login(ctx context.Context, req *model.LoginRequest) (*mod
 
 // Register creates a new employee account.
 func (as *AuthService) Register(ctx context.Context, req *model.RegisterRequest) (*model.AuthInitResponse, error) {
-	as.logger.Info("Attempting registration", "email", req.Email)
+	// Normalize email (fix #2)
+	normalizedEmail := as.normalizeEmail(req.Email)
+	req.Email = normalizedEmail
+
+	as.logger.Info("Attempting registration", "email_domain", as.getEmailDomain(normalizedEmail))
+
+	// Invalidate any existing active registration verification codes for this email (fix #8)
+	if err := as.authRepo.InvalidateActiveRegisterCodes(ctx, normalizedEmail); err != nil {
+		as.logger.Error("Failed to invalidate existing codes", "error", err)
+		// Continue anyway - don't fail the registration attempt
+	}
 
 	// Check if employee already exists
-	existingEmployee, err := as.employeeRepo.GetByEmail(ctx, req.Email)
+	existingEmployee, err := as.employeeRepo.GetByEmail(ctx, normalizedEmail)
 	if err == nil && existingEmployee != nil {
-		as.logger.Error("Employee already exists", "email", req.Email)
-		return nil, fmt.Errorf("employee already exists")
+		as.logger.Error("Employee already exists", "email_domain", as.getEmailDomain(normalizedEmail))
+		return nil, model.ErrEmployeeAlreadyExists
 	}
 
 	// Generate verification code
@@ -112,7 +132,7 @@ func (as *AuthService) Register(ctx context.Context, req *model.RegisterRequest)
 	codeEntity := &model.RegisterVerificationCode{
 		ID:        primitive.NewObjectID(),
 		FullName:  req.FullName,
-		Email:     req.Email,
+		Email:     normalizedEmail,
 		Code:      verificationCode,
 		IsUsed:    false,
 		CreatedAt: time.Now(),
@@ -120,21 +140,21 @@ func (as *AuthService) Register(ctx context.Context, req *model.RegisterRequest)
 	}
 
 	if err := as.authRepo.CreateRegisterVerificationCode(ctx, codeEntity); err != nil {
-		as.logger.Error("Failed to save verification code", "email", req.Email, "error", err)
+		as.logger.Error("Failed to save verification code", "email_domain", as.getEmailDomain(normalizedEmail), "error", err)
 		return nil, fmt.Errorf("failed to save verification code")
 	}
 
 	// Send employee registration email via RabbitMQ
 	if as.emailProducer != nil {
-		if err := as.emailProducer.SendEmployeeRegisterEmail(as.queueName, req.Email, req.FullName, codeEntity.ID.Hex(), verificationCode); err != nil {
-			as.logger.Error("Failed to send employee registration email", "email", req.Email, "error", err)
-			// Note: We don't return error here as the verification code is saved and user can still verify manually
+		if err := as.emailProducer.SendEmployeeRegisterEmail(as.queueName, normalizedEmail, req.FullName, codeEntity.ID.Hex(), verificationCode); err != nil {
+			as.logger.Error("Failed to send employee registration email", "email_domain", as.getEmailDomain(normalizedEmail), "error", err)
 		} else {
-			as.logger.Info("Employee registration email task sent", "email", req.Email)
+			as.logger.Info("Employee registration email task sent", "email_domain", as.getEmailDomain(normalizedEmail))
 		}
 	}
 
-	as.logger.Info("Registration verification code generated", "email", req.Email, "code_request_id", codeEntity.ID.Hex())
+	// Fix #3: Remove sensitive logging - don't log email
+	as.logger.Info("Registration initiated", "code_request_id", codeEntity.ID.Hex())
 
 	return &model.AuthInitResponse{
 		CodeRequestID: codeEntity.ID.Hex(),
@@ -149,13 +169,12 @@ func (as *AuthService) VerifyEmail(ctx context.Context, req *model.VerifyEmailRe
 	codeRequestID, err := primitive.ObjectIDFromHex(req.CodeRequestID)
 	if err != nil {
 		as.logger.Error("Invalid code request ID format", "code_request_id", req.CodeRequestID, "error", err)
-		return nil, fmt.Errorf("invalid code request ID")
+		return nil, model.ErrInvalidVerificationCode
 	}
 
 	// Try to find as LoginVerificationCode first
 	loginCode, err := as.authRepo.GetLoginVerificationCodeByID(ctx, codeRequestID)
 	if err == nil {
-		// Handle login verification
 		return as.handleLoginVerification(ctx, loginCode, req.Code)
 	}
 
@@ -167,20 +186,34 @@ func (as *AuthService) VerifyEmail(ctx context.Context, req *model.VerifyEmailRe
 	}
 
 	as.logger.Error("Verification code not found", "code_request_id", req.CodeRequestID)
-	return nil, fmt.Errorf("invalid verification code")
+	return nil, model.ErrInvalidVerificationCode
 }
 
 func (as *AuthService) handleLoginVerification(ctx context.Context, codeEntity *model.LoginVerificationCode, providedCode string) (*model.VerifyResponse, error) {
+	isLocked, err := as.isAccountLocked(ctx, codeEntity.Email)
+	if err != nil {
+		as.logger.Error("Failed to check account lock status", "error", err)
+		return nil, model.NewValidationError("verification failed", model.ErrCodeInternalServerError, false)
+	}
+	if isLocked {
+		as.logger.Error("Account temporarily locked", "email_domain", as.getEmailDomain(codeEntity.Email))
+		return nil, model.ErrAccountLocked
+	}
+
 	// Verify the provided code matches
 	if codeEntity.Code != providedCode {
+		// Record failed attempt for code mismatch
+		if err := as.authRepo.RecordFailedAttempt(ctx, codeEntity.Email, "login"); err != nil {
+			as.logger.Error("Failed to record failed attempt", "error", err)
+		}
 		as.logger.Error("Verification code mismatch", "code_request_id", codeEntity.ID.Hex())
-		return nil, fmt.Errorf("invalid verification code")
+		return nil, model.ErrInvalidVerificationCode
 	}
 
 	// Check if code is valid
 	if !codeEntity.IsValid() {
 		as.logger.Error("Verification code is invalid or expired", "code_request_id", codeEntity.ID.Hex())
-		return nil, fmt.Errorf("verification code is invalid or expired")
+		return nil, model.ErrVerificationCodeExpired
 	}
 
 	// Mark code as used
@@ -193,15 +226,13 @@ func (as *AuthService) handleLoginVerification(ctx context.Context, codeEntity *
 	// Get employee by email
 	employeeEntity, err := as.employeeRepo.GetByEmail(ctx, codeEntity.Email)
 	if err != nil {
-		as.logger.Error("Employee not found during email verification", "email", codeEntity.Email, "error", err)
-		return nil, fmt.Errorf("employee not found")
+		as.logger.Error("Employee not found during email verification", "email_domain", as.getEmailDomain(codeEntity.Email), "error", err)
+		return nil, model.ErrEmployeeNotFound
 	}
 
-	// Update employee's updated timestamp
-	employeeEntity.UpdatedAt = time.Now()
-	if err := as.employeeRepo.Update(ctx, employeeEntity); err != nil {
-		as.logger.Error("Failed to update employee", "employee_id", employeeEntity.ID, "error", err)
-		return nil, fmt.Errorf("failed to update employee")
+	// Clear failed attempts on successful verification
+	if err := as.authRepo.ClearFailedAttempts(ctx, codeEntity.Email); err != nil {
+		as.logger.Error("Failed to clear attempt counter", "error", err)
 	}
 
 	// Generate access token after successful verification
@@ -211,23 +242,38 @@ func (as *AuthService) handleLoginVerification(ctx context.Context, codeEntity *
 		return nil, fmt.Errorf("failed to generate tokens")
 	}
 
-	as.logger.Info("Login verification successful", "employee_id", employeeEntity.ID, "email", codeEntity.Email)
+	as.logger.Info("Login verification successful", "employee_id", employeeEntity.ID, "email_domain", as.getEmailDomain(codeEntity.Email))
 	return &model.VerifyResponse{
 		AccessToken: accessToken,
 	}, nil
 }
 
 func (as *AuthService) handleRegisterVerification(ctx context.Context, codeEntity *model.RegisterVerificationCode, providedCode string) (*model.VerifyResponse, error) {
+	// Fix #9: Check if account is locked
+	isLocked, err := as.isAccountLocked(ctx, codeEntity.Email)
+	if err != nil {
+		as.logger.Error("Failed to check account lock status", "error", err)
+		return nil, model.NewValidationError("verification failed", model.ErrCodeInternalServerError, false)
+	}
+	if isLocked {
+		as.logger.Error("Account temporarily locked", "email_domain", as.getEmailDomain(codeEntity.Email))
+		return nil, model.ErrAccountLocked
+	}
+
 	// Verify the provided code matches
 	if codeEntity.Code != providedCode {
+		// Record failed attempt for code mismatch
+		if err := as.authRepo.RecordFailedAttempt(ctx, codeEntity.Email, "register"); err != nil {
+			as.logger.Error("Failed to record failed attempt", "error", err)
+		}
 		as.logger.Error("Verification code mismatch", "code_request_id", codeEntity.ID.Hex())
-		return nil, fmt.Errorf("invalid verification code")
+		return nil, model.ErrInvalidVerificationCode
 	}
 
 	// Check if code is already used
 	if codeEntity.IsUsed {
 		as.logger.Error("Verification code already used", "code_request_id", codeEntity.ID.Hex())
-		return nil, fmt.Errorf("verification code already used")
+		return nil, model.ErrInvalidVerificationCode
 	}
 
 	// Mark code as used
@@ -236,6 +282,12 @@ func (as *AuthService) handleRegisterVerification(ctx context.Context, codeEntit
 	if err := as.authRepo.UpdateRegisterVerificationCode(ctx, codeEntity); err != nil {
 		as.logger.Error("Failed to mark verification code as used", "code_request_id", codeEntity.ID.Hex(), "error", err)
 		return nil, fmt.Errorf("failed to process verification code")
+	}
+
+	// Clear failed attempts on successful verification
+	if err := as.authRepo.ClearFailedAttempts(ctx, codeEntity.Email); err != nil {
+		as.logger.Error("Failed to clear attempt counter", "error", err)
+		// Don't fail the registration for this
 	}
 
 	// Create new employee
@@ -248,7 +300,7 @@ func (as *AuthService) handleRegisterVerification(ctx context.Context, codeEntit
 	}
 
 	if err := as.employeeRepo.Create(ctx, newEmployee); err != nil {
-		as.logger.Error("Failed to create employee during registration", "email", codeEntity.Email, "error", err)
+		as.logger.Error("Failed to create employee during registration", "email_domain", as.getEmailDomain(codeEntity.Email), "error", err)
 		return nil, fmt.Errorf("failed to create employee")
 	}
 
@@ -259,7 +311,7 @@ func (as *AuthService) handleRegisterVerification(ctx context.Context, codeEntit
 		return nil, fmt.Errorf("failed to generate tokens")
 	}
 
-	as.logger.Info("Registration verification successful", "employee_id", newEmployee.ID, "email", codeEntity.Email)
+	as.logger.Info("Registration verification successful", "employee_id", newEmployee.ID, "email_domain", as.getEmailDomain(codeEntity.Email))
 	return &model.VerifyResponse{
 		AccessToken: accessToken,
 	}, nil
@@ -387,6 +439,43 @@ func (as *AuthService) generateVerificationCode() (string, error) {
 	return code, nil
 }
 
+// normalizeEmail normalizes email addresses (fix #2)
+func (as *AuthService) normalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
+}
+
+// getEmailDomain extracts domain from email for logging (fix #3)
+func (as *AuthService) getEmailDomain(email string) string {
+	parts := strings.Split(email, "@")
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return "unknown"
+}
+
+// isAccountLocked checks if an account is locked due to too many failed attempts (business logic)
+func (as *AuthService) isAccountLocked(ctx context.Context, email string) (bool, error) {
+	attempts, err := as.authRepo.GetFailedAttemptsByEmail(ctx, email)
+	if err != nil {
+		return false, err
+	}
+
+	totalAttempts := 0
+	for _, attempt := range attempts {
+		// Only count non-expired attempts
+		if !attempt.ShouldReset() {
+			// If any single action has reached max attempts, account is locked
+			if attempt.Count >= model.MaxFailedAttempts {
+				return true, nil
+			}
+			totalAttempts += attempt.Count
+		}
+	}
+
+	// Check if total attempts across all actions exceed the limit
+	return totalAttempts >= model.MaxFailedAttempts, nil
+}
+
 // RegisterEmployee handles employee registration via invitation link (matches Python register_employee).
 func (as *AuthService) RegisterEmployee(ctx context.Context, codeRequestID, code string) (*model.VerifyResponse, error) {
 	as.logger.Info("Attempting employee registration via invitation", "code_request_id", codeRequestID)
@@ -428,7 +517,7 @@ func (as *AuthService) RegisterEmployee(ctx context.Context, codeRequestID, code
 
 	if err == nil && existingEmployee != nil {
 		// Employee exists - add new restaurants to existing employee
-		as.logger.Info("Adding restaurants to existing employee", "email", empRegCode.Email, "employee_id", existingEmployee.ID)
+		as.logger.Info("Adding restaurants to existing employee", "email_domain", as.getEmailDomain(empRegCode.Email), "employee_id", existingEmployee.ID)
 
 		// Merge existing restaurants with new ones (avoid duplicates)
 		existingRestaurantMap := make(map[primitive.ObjectID]bool)
@@ -447,15 +536,15 @@ func (as *AuthService) RegisterEmployee(ctx context.Context, codeRequestID, code
 		// Update employee with new restaurants
 		existingEmployee.UpdatedAt = time.Now()
 		if err := as.employeeRepo.Update(ctx, existingEmployee); err != nil {
-			as.logger.Error("Failed to update existing employee with new restaurants", "email", empRegCode.Email, "error", err)
+			as.logger.Error("Failed to update existing employee with new restaurants", "email_domain", as.getEmailDomain(empRegCode.Email), "error", err)
 			return nil, fmt.Errorf("failed to update employee")
 		}
 
 		targetEmployee = existingEmployee
-		as.logger.Info("Successfully added restaurants to existing employee", "employee_id", existingEmployee.ID, "email", empRegCode.Email)
+		as.logger.Info("Successfully added restaurants to existing employee", "employee_id", existingEmployee.ID, "email_domain", as.getEmailDomain(empRegCode.Email))
 	} else {
 		// Employee doesn't exist - create new employee
-		as.logger.Info("Creating new employee from invitation", "email", empRegCode.Email)
+		as.logger.Info("Creating new employee from invitation", "email_domain", as.getEmailDomain(empRegCode.Email))
 
 		newEmployee := &model.Employee{
 			ID:       primitive.NewObjectID(),
@@ -472,12 +561,12 @@ func (as *AuthService) RegisterEmployee(ctx context.Context, codeRequestID, code
 		}
 
 		if err := as.employeeRepo.Create(ctx, newEmployee); err != nil {
-			as.logger.Error("Failed to create employee during invitation registration", "email", empRegCode.Email, "error", err)
+			as.logger.Error("Failed to create employee during invitation registration", "email_domain", as.getEmailDomain(empRegCode.Email), "error", err)
 			return nil, fmt.Errorf("failed to create employee")
 		}
 
 		targetEmployee = newEmployee
-		as.logger.Info("Successfully created new employee", "employee_id", newEmployee.ID, "email", empRegCode.Email)
+		as.logger.Info("Successfully created new employee", "employee_id", newEmployee.ID, "email_domain", as.getEmailDomain(empRegCode.Email))
 	}
 
 	// Mark invitation as used (matches Python ActionRequestService.set_employee_id_and_mark_as_used)
@@ -1072,19 +1161,19 @@ func (as *AuthService) VerifyEmailUpdate(ctx context.Context, employeeID primiti
 	emailUpdateCode, err := as.authRepo.GetEmailUpdateVerificationCodeByID(ctx, codeRequestID)
 	if err != nil {
 		as.logger.Error("Email update verification code not found", "code_request_id", req.CodeRequestID, "error", err)
-		return nil, fmt.Errorf("invalid verification code")
+		return nil, model.ErrInvalidVerificationCode
 	}
 
 	// Verify that the code belongs to the requesting employee
 	if emailUpdateCode.EmployeeID != employeeID {
 		as.logger.Warn("Email update verification code does not belong to employee", "employee_id", employeeID, "code_employee_id", emailUpdateCode.EmployeeID)
-		return nil, fmt.Errorf("invalid verification code")
+		return nil, model.ErrInvalidVerificationCode
 	}
 
 	// Verify the provided code matches
 	if emailUpdateCode.Code != req.Code {
 		as.logger.Error("Email update verification code mismatch", "code_request_id", req.CodeRequestID)
-		return nil, fmt.Errorf("invalid verification code")
+		return nil, model.ErrInvalidVerificationCode
 	}
 
 	// Check if code is valid (not expired and not used)

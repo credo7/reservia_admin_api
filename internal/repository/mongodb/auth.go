@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"reservia-admin-api/internal/repository"
 )
@@ -21,6 +22,7 @@ type AuthRepository struct {
 	registerEmployeeCodes      *mongo.Collection
 	tgVerificationCodes        *mongo.Collection
 	emailUpdateVerificationCodes *mongo.Collection
+	failedAttempts             *mongo.Collection
 }
 
 // NewAuthRepository creates a new auth repository.
@@ -31,6 +33,7 @@ func NewAuthRepository(db *mongo.Database) repository.AuthRepository {
 		registerEmployeeCodes:        db.Collection("employees_register_employee_codes"),
 		tgVerificationCodes:          db.Collection("employees_tg_verification_codes"),
 		emailUpdateVerificationCodes: db.Collection("employees_email_update_verification_codes"),
+		failedAttempts:              db.Collection("failed_attempts"),
 	}
 }
 
@@ -327,4 +330,121 @@ func (r *AuthRepository) UpdateEmailUpdateVerificationCode(ctx context.Context, 
 	}
 	_, err := r.emailUpdateVerificationCodes.UpdateOne(ctx, filter, update)
 	return err
+}
+
+// Security improvement methods
+
+// InvalidateActiveLoginCodes invalidates all active login verification codes for an email.
+func (r *AuthRepository) InvalidateActiveLoginCodes(ctx context.Context, email string) error {
+	filter := bson.M{
+		"email":   email,
+		"is_used": false,
+		"created_at": bson.M{
+			"$gt": time.Now().Add(-model.AuthRequestExpiration),
+		},
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"is_used":    true,
+			"updated_at": time.Now(),
+		},
+	}
+	_, err := r.loginVerificationCodes.UpdateMany(ctx, filter, update)
+	return err
+}
+
+// InvalidateActiveRegisterCodes invalidates all active register verification codes for an email.
+func (r *AuthRepository) InvalidateActiveRegisterCodes(ctx context.Context, email string) error {
+	filter := bson.M{
+		"email":   email,
+		"is_used": false,
+		"created_at": bson.M{
+			"$gt": time.Now().Add(-model.AuthRequestExpiration),
+		},
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"is_used":    true,
+			"updated_at": time.Now(),
+		},
+	}
+	_, err := r.registerVerificationCodes.UpdateMany(ctx, filter, update)
+	return err
+}
+
+// RecordFailedAttempt records a failed authentication attempt.
+func (r *AuthRepository) RecordFailedAttempt(ctx context.Context, email, action string) error {
+	now := time.Now()
+	expiresAt := now.Add(model.LockoutDuration)
+	
+	filter := bson.M{
+		"email":  email,
+		"action": action,
+	}
+	
+	// Use upsert to either update existing record or create new one
+	update := bson.M{
+		"$inc": bson.M{"count": 1},
+		"$set": bson.M{
+			"last_at":    now,
+			"expires_at": expiresAt,
+		},
+		"$setOnInsert": bson.M{
+			"_id":      primitive.NewObjectID(),
+			"first_at": now,
+		},
+	}
+	
+	opts := options.Update().SetUpsert(true)
+	_, err := r.failedAttempts.UpdateOne(ctx, filter, update, opts)
+	return err
+}
+
+// GetFailedAttempt retrieves a failed attempt record for an email and action.
+func (r *AuthRepository) GetFailedAttempt(ctx context.Context, email, action string) (*model.FailedAttempt, error) {
+	var attempt model.FailedAttempt
+	
+	err := r.failedAttempts.FindOne(ctx, bson.M{
+		"email":  email,
+		"action": action,
+	}).Decode(&attempt)
+	
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+	
+	return &attempt, nil
+}
+
+// ClearFailedAttempts clears all failed attempts for an email.
+func (r *AuthRepository) ClearFailedAttempts(ctx context.Context, email string) error {
+	// Delete all failed attempt records for this email
+	_, err := r.failedAttempts.DeleteMany(ctx, bson.M{"email": email})
+	return err
+}
+
+// GetFailedAttemptsByEmail retrieves all failed attempt records for an email.
+func (r *AuthRepository) GetFailedAttemptsByEmail(ctx context.Context, email string) ([]*model.FailedAttempt, error) {
+	cursor, err := r.failedAttempts.Find(ctx, bson.M{
+		"email": email,
+		"action": bson.M{"$in": []string{"login", "register"}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	
+	var attempts []*model.FailedAttempt
+	for cursor.Next(ctx) {
+		var attempt model.FailedAttempt
+		if err := cursor.Decode(&attempt); err != nil {
+			return nil, err
+		}
+		attempts = append(attempts, &attempt)
+	}
+	
+	return attempts, cursor.Err()
 }

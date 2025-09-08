@@ -287,3 +287,30 @@ const (
 	AccessTokenExpiration = 24 * time.Hour
 	AuthRequestExpiration = 5 * time.Minute // Matches Python AUTH_TIMEOUT_MINUTES
 )
+
+// FailedAttempt represents a failed authentication attempt for rate limiting
+type FailedAttempt struct {
+	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Email     string             `json:"email" bson:"email"`
+	Action    string             `json:"action" bson:"action"` // "login", "register", etc.
+	Count     int                `json:"count" bson:"count"`
+	FirstAt   time.Time          `json:"firstAt" bson:"first_at"`
+	LastAt    time.Time          `json:"lastAt" bson:"last_at"`
+	ExpiresAt time.Time          `json:"expiresAt" bson:"expires_at"`
+}
+
+// Constants for failed attempt tracking
+const (
+	MaxFailedAttempts = 5
+	LockoutDuration   = 15 * time.Minute
+)
+
+// IsLocked checks if the account should be locked due to too many failed attempts
+func (fa *FailedAttempt) IsLocked() bool {
+	return fa.Count >= MaxFailedAttempts && time.Now().Before(fa.ExpiresAt)
+}
+
+// ShouldReset checks if the failed attempt counter should be reset (expired)
+func (fa *FailedAttempt) ShouldReset() bool {
+	return time.Now().After(fa.ExpiresAt)
+}

@@ -53,6 +53,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Call auth service
 	response, err := h.authService.Login(r.Context(), &req)
 	if err != nil {
+		// Check if it's a validation error with structured response
+		if validationErr, ok := err.(*model.ValidationError); ok {
+			h.writeJSON(w, http.StatusBadRequest, validationErr.Response)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
@@ -94,6 +99,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// Call auth service
 	response, err := h.authService.Register(r.Context(), &req)
 	if err != nil {
+		// Check if it's a validation error with structured response
+		if validationErr, ok := err.(*model.ValidationError); ok {
+			h.writeJSON(w, http.StatusBadRequest, validationErr.Response)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -135,6 +145,11 @@ func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 	// Call auth service
 	response, err := h.authService.VerifyEmail(r.Context(), &req)
 	if err != nil {
+		// Check if it's a validation error with structured response
+		if validationErr, ok := err.(*model.ValidationError); ok {
+			h.writeJSON(w, http.StatusBadRequest, validationErr.Response)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -254,5 +269,14 @@ func (h *AuthHandler) VerifyTelegram(w http.ResponseWriter, r *http.Request) {
 		h.logger.Error("Failed to encode response", "error", err)
 		// Note: We can't call http.Error here as headers are already written
 		return
+	}
+}
+
+// Helper method to write JSON responses
+func (h *AuthHandler) writeJSON(w http.ResponseWriter, statusCode int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		h.logger.Error("Failed to encode JSON response", "error", err)
 	}
 }
